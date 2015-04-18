@@ -4,10 +4,13 @@
 #include <iostream>
 #include <vector>
 
+#define TREE_PATH "./tree.conf"
+
 class Node
 {
 public:
-	Node(std::string ip);
+	Node(){}
+	Node(std::string ip) : this->ip(ip) {}
 	std::string getIp();
 
 private:
@@ -19,7 +22,8 @@ class Tree
 public:
 	Tree();
 	Node getParent();
-	std::vector<Node> child;
+	std::vector<Node> getChild();
+	std::vector<Node> getPeer();
 
 private:
 	// is parent Node always one?
