@@ -1,6 +1,7 @@
 #ifndef ILMS_H
 #define ILMS_H
 
+#include "bloomfiler.h"
 #include "topology.h"
 
 class Ilms
@@ -11,6 +12,8 @@ public:
 	
 private:
 	Tree tree;
+	Bloomfilter *myFilter;
+	Bloomfilter *childFilter;
 };
 
 #endif

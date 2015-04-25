@@ -2,9 +2,6 @@
 
 #include "bloomfilter.h"
 
-#define SETBIT(a,n) (a[n>>3] |= (1 << (n&7)))
-#define GETBIT(a,n) (a[n>>3] & (1 << (n&7)))
-
 /*
  * 블룸필터의 생성자
  * 비트필드를 초기화 함
@@ -13,7 +10,7 @@
  * hash : 해시 함수 배열
  */
 
-Bloomfilter::Bloomfilter(long long size, int numHash,long long (**hash)(int)))
+Bloomfilter::Bloomfilter(long long size, int numHash,long long (**hash)(int))
 {
 	this->size = size;
 	this->numHash = numHash;
@@ -37,12 +34,12 @@ Bloomfilter::~Bloomfilter()
  * 데이터 등록
  */
 
-void Bloomfilter::insert(int data)
+void Bloomfilter::insert(long long data)
 {
 	for(int i=0;i<numHash;i++)
 	{
 		const long long res = hash[i](data) % size;
-		SETBIT(filed,res);
+		field[res>>3] |= (1 << (res&7))
 	}
 }
 
@@ -55,7 +52,7 @@ bool Bloomfilter::lookup(int data)
 	for(int i=0;i<numHash;i++)
 	{
 		const long long res = hash[i](data) % size;
-		if(!GETBIT(field,res)) return false;
+		if(!(field[res>>3] & (1 << (res&7))) return false;
 	}
 	return true;
 }

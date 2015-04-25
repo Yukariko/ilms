@@ -9,8 +9,7 @@
 class Node
 {
 public:
-	Node(){}
-	Node(std::string ip) : this->ip(ip) {}
+	Node(std::string ip);
 	std::string getIp();
 
 private:
@@ -27,7 +26,7 @@ public:
 
 private:
 	// is parent Node always one?
-	Node parent;
+	Node *parent;
 	std::vector<Node> child;
 	std::vector<Node> peer;
 

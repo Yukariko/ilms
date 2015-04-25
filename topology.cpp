@@ -6,6 +6,15 @@
  */
 
 /*
+ * 노드 생성자
+ */
+
+Node::Node(std::string ip)
+{
+	this->ip = ip;
+}
+
+/*
  * ip를 반환하는 함수
  */
 

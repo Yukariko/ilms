@@ -11,7 +11,7 @@ const long long defaultSize = 8 * 1024 * 1024;
 
 Ilms::Ilms()
 {
-	long long (*hash[])(int) = {test,test2,test3,test4,test5,test6,test7,test8,test9,test10,test11};
+	long long (*hash[])(long long) = {test,test2,test3,test4,test5,test6,test7,test8,test9,test10,test11};
 	myFilter = new Bloomfilter(defaultSize, 11, hash);
 	childFilter = new Bloomfilter(defaultSize, 11, hash);
 }

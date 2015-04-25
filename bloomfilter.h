@@ -4,16 +4,16 @@
 class Bloomfilter
 {
 public:
-	Bloomfilter(long long size, int numHash,long long (**hash)(int)));
+	Bloomfilter(long long size, int numHash,long long (**hash)(long long));
 	~Bloomfilter();
-	void insert(int data);
-	bool lookup(int data);
+	void insert(long long data);
+	bool lookup(long long data);
 
 private:
 	unsigned char *field;
 	long long size;
 	int numHash;
-	long long (**hash)(int));
+	long long (**hash)(long long);
 };
 
 
@@ -21,16 +21,16 @@ private:
  * 테스트 해시 함수
  */
 
-long long test(int data){return a*997*1499;}
-long long test2(int data){return a*1009*1361;}
-long long test3(int data){return a*1013*1327;}
-long long test4(int data){return a*1013*1327;}
-long long test5(int data){return a*1013*1327;}
-long long test6(int data){return a*1013*1327;}
-long long test7(int data){return a*1013*1327;}
-long long test8(int data){return a*1013*1327;}
-long long test9(int data){return a*1013*1327;}
-long long test10(int data){return a*1013*1327;}
-long long test11(int data){return a*1013*1327;}
+long long test(long long data){return data*997*1499;}
+long long test2(long long data){return data*1009*1361;}
+long long test3(long long data){return data*1013*1327;}
+long long test4(long long data){return data*1013*1327;}
+long long test5(long long data){return data*1013*1327;}
+long long test6(long long data){return data*1013*1327;}
+long long test7(long long data){return data*1013*1327;}
+long long test8(long long data){return data*1013*1327;}
+long long test9(long long data){return data*1013*1327;}
+long long test10(long long data){return data*1013*1327;}
+long long test11(long long data){return data*1013*1327;}
 
 #endif
