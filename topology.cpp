@@ -42,7 +42,7 @@ Tree::Tree()
 	
 	fgets(buf,sizeof(buf),fp);
 
-	parent = Node(buf);
+	parent = new Node(buf);
 
 	int num;
 	fscanf(fp,"%d ",&num);

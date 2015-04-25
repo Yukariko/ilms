@@ -10,7 +10,7 @@
  * hash : 해시 함수 배열
  */
 
-Bloomfilter::Bloomfilter(long long size, int numHash,long long (**hash)(int))
+Bloomfilter::Bloomfilter(long long size, int numHash,long long (**hash)(long long))
 {
 	this->size = size;
 	this->numHash = numHash;
@@ -39,7 +39,7 @@ void Bloomfilter::insert(long long data)
 	for(int i=0;i<numHash;i++)
 	{
 		const long long res = hash[i](data) % size;
-		field[res>>3] |= (1 << (res&7))
+		field[res>>3] |= (1 << (res&7));
 	}
 }
 
@@ -47,7 +47,7 @@ void Bloomfilter::insert(long long data)
  * 데이터 검색
  */
 
-bool Bloomfilter::lookup(int data)
+bool Bloomfilter::lookup(long long data)
 {
 	for(int i=0;i<numHash;i++)
 	{
