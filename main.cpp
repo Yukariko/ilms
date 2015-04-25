@@ -4,6 +4,6 @@
 int main()
 {
 	Ilms ilms;
-	ilms->start();
+	ilms.start();
 	return 0;
 }

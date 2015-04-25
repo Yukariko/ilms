@@ -1,5 +1,4 @@
 #include <cstring>
-
 #include "bloomfilter.h"
 
 /*
