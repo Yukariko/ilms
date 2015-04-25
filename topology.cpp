@@ -1,4 +1,5 @@
 #include <cstdio>
+#include <cstdlib>
 #include "topology.h"
 
 /* 
@@ -62,7 +63,10 @@ Tree::Tree()
 		child.push_back(Node(buf));
 	}
 
-	fscanf(fp,"%d ",&num);
+	if(fscanf(fp,"%d ",&num) != 1)
+	{
+		exit(1);
+	}
 
 	for(int i=0;i<num;i++)
 	{
