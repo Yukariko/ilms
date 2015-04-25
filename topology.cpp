@@ -39,6 +39,11 @@ Tree::Tree()
 {
 	FILE *fp = fopen(TREE_PATH,"r");
 
+	if(!fp)
+	{
+		exit(1);
+	}
+
 	char buf[256];
 	
 	if(!fgets(buf,sizeof(buf),fp))
