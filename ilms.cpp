@@ -33,6 +33,17 @@ Ilms::Ilms()
 	childFilter = new Bloomfilter(defaultSize, 11, hash);
 }
 
+/*
+ * Ilms 소멸자
+ * 할당 해제
+ */
+
+Ilms::~Ilms()
+{
+	delete myFilter;
+	delete childFilter;
+}
+
 int Ilms::start()
 {
 

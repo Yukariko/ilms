@@ -10,6 +10,7 @@ class Node
 {
 public:
 	Node(std::string ip);
+	~Node();
 	std::string getIp();
 
 private:

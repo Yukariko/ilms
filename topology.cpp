@@ -24,6 +24,16 @@ std::string Node::getIp()
 	return ip;
 }
 
+/*
+ * 노드 소멸자
+ * 할당 해제
+ */
+
+Node::~Node()
+{
+	delete parent;
+}
+
 
 /*
  * Tree 클래스 맴버함수

@@ -8,6 +8,7 @@ class Ilms
 {
 public:
 	Ilms();
+	~Ilms();
 	int start();
 	
 private:
