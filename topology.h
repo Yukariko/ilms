@@ -10,7 +10,6 @@ class Node
 {
 public:
 	Node(std::string ip);
-	~Node();
 	std::string getIp();
 
 private:
@@ -21,6 +20,7 @@ class Tree
 {
 public:
 	Tree();
+	~Tree();
 	Node getParent();
 	std::vector<Node> getChild();
 	std::vector<Node> getPeer();

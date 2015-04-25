@@ -25,17 +25,6 @@ std::string Node::getIp()
 }
 
 /*
- * 노드 소멸자
- * 할당 해제
- */
-
-Node::~Node()
-{
-	delete parent;
-}
-
-
-/*
  * Tree 클래스 맴버함수
  */
 
@@ -94,6 +83,17 @@ Tree::Tree()
 
 	fclose(fp);
 }
+
+/*
+ * 트리 소멸자
+ * 할당 해제
+ */
+
+Tree::~Tree()
+{
+	delete parent;
+}
+
 
 /*
  * 부모 노드를 반환하는 함수
