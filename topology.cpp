@@ -1,5 +1,5 @@
-#include "topology.h"
 #include <cstdio>
+#include "topology.h"
 
 /* 
  * Node 클래스 맴버함수
