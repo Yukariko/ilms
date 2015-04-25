@@ -17,7 +17,7 @@ Bloomfilter::Bloomfilter(long long size, int numHash,long long (**hash)(long lon
 	this->hash = hash;
 
 	field = new unsigned char[size/8+1];
-	memset(filed,0,size/8+1);
+	memset(field,0,size/8+1);
 }
 
 /*
@@ -52,7 +52,8 @@ bool Bloomfilter::lookup(long long data)
 	for(int i=0;i<numHash;i++)
 	{
 		const long long res = hash[i](data) % size;
-		if(!(field[res>>3] & (1 << (res&7))) return false;
+		if(!(field[res>>3] & (1 << (res&7))))
+			return false;
 	}
 	return true;
 }

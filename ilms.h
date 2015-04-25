@@ -1,7 +1,7 @@
 #ifndef ILMS_H
 #define ILMS_H
 
-#include "bloomfiler.h"
+#include "bloomfilter.h"
 #include "topology.h"
 
 class Ilms

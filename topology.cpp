@@ -40,16 +40,25 @@ Tree::Tree()
 
 	char buf[256];
 	
-	fgets(buf,sizeof(buf),fp);
+	if(!fgets(buf,sizeof(buf),fp))
+	{
+		exit(1);
+	}
 
 	parent = new Node(buf);
 
 	int num;
-	fscanf(fp,"%d ",&num);
+	if(fscanf(fp,"%d ",&num) != 1)
+	{
+		exit(1);
+	}
 
 	for(int i=0;i<num;i++)
 	{
-		fgets(buf,sizeof(buf),fp);
+		if(!fgets(buf,sizeof(buf),fp))
+		{
+			exit(1);
+		}
 		child.push_back(Node(buf));
 	}
 
@@ -57,7 +66,10 @@ Tree::Tree()
 
 	for(int i=0;i<num;i++)
 	{
-		fgets(buf,sizeof(buf),fp);
+		if(!fgets(buf,sizeof(buf),fp))
+		{
+			exit(1);
+		}
 		peer.push_back(Node(buf));
 	}
 
@@ -71,7 +83,7 @@ Tree::Tree()
 
 Node Tree::getParent()
 {
-	return parent;
+	return *parent;
 }
 
 /*
