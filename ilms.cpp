@@ -287,7 +287,7 @@ void Ilms::proc_data_delete()
 	if(!sc.next_value(data))
 		return;
 
-	char &up_down = sc.get_cur();
+	char &up_down = *sc.get_cur();
 
 	if(myFilter->lookup(data))
 	{
@@ -317,4 +317,18 @@ void Ilms::proc_data_delete()
 		up_down = MARK_UP;
 		this->send(parent->getIp(), sc.buf, sc.len);
 	}
+}
+
+
+void Ilms::insert(long long key, long long value)
+{
+
+}
+int search(long long key,char *buf, int len)
+{
+	return 1;
+}
+bool remove(long long key)
+{
+	return true;
 }
