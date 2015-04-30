@@ -153,7 +153,7 @@ void Ilms::proc_bf_add()
 	long long data;
 	if(!sc.next_value(data))
 		return;
-	childFilter.insert(data);
+	childFilter->insert(data);
 	this->send(tree->getParent().getIp(), sc.buf, sc.len);
 }
 
@@ -168,7 +168,7 @@ void Ilms::proc_data_add(char *buf, int len)
 	if(!sc.next_value(data))
 		return;
 
-	myFilter.insert(data);
+	myFilter->insert(data);
 	insert(data);
 
 	buf[0] = CMD_BF_ADD;
@@ -197,7 +197,7 @@ void Ilms::proc_data_search(char *buf, int len)
 	
 	char &up_down = *sc.get_cur();
 
-	if(myFilter.lookup(data))
+	if(myFilter->lookup(data))
 	{
 		char res[BUF_SIZE];
 		int rlen = search(data,res,BUF_SIZE);
@@ -209,7 +209,7 @@ void Ilms::proc_data_search(char *buf, int len)
 		}
 	}
 
-	if(childFilter.lookup(data))
+	if(childFilter->lookup(data))
 	{
 		insert(data | MARK_SEARCH_FAIL, child.size() - (up_down == MARK_UP));
 
@@ -285,13 +285,13 @@ void Ilms::proc_data_delete()
 
 	char &up_down = sc.get_cur();
 
-	if(myFilter.lookup(data))
+	if(myFilter->lookup(data))
 	{
 		if(remove(data))
 			return;
 	}
 
-	if(childFilter.lookup(data))
+	if(childFilter->lookup(data))
 	{
 		insert(data | MARK_SEARCH_FAIL, child.size() - (up_down == MARK_UP));
 
