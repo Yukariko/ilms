@@ -87,10 +87,13 @@ void Ilms::start()
 {
 	char buf[BUF_SIZE];
 
+	struct sockaddr_in clnt_adr; 
+	socklen_t clnt_adr_sz;
+
 	while(1)
 	{
 		clnt_adr_sz = sizeof(clnt_adr);
-		int len = recvfrom(serv_sock, buf, BUF_SIZE, 0,
+		int len = recvfrom(sock, buf, BUF_SIZE, 0,
 					(struct sockaddr*)&clnt_adr, &clnt_adr_sz);
 
 		if(len > 0)
@@ -132,12 +135,12 @@ void Ilms::send(const char *ip,char *buf,int len)
 	struct sockaddr_in clnt_adr;
 	socklen_t clnt_adr_sz = sizeof(clnt_adr);
 
-	memset(&sockaddr_in,0,sizeof(clnt_adr));
+	memset(&clnt_adr,0,sizeof(clnt_adr));
 	clnt_adr.sin_family = AF_INET;
 	clnt_adr.sin_addr.s_addr = inet_addr(ip);
 	clnt_adr.sin_port = htons(PORT);
 
-	sendto(sock, buf, len, 0, (struct sockaddr *)&clnt_adr, &clnt_adr_sz);
+	sendto(sock, buf, len, 0, (struct sockaddr *)&clnt_adr, clnt_adr_sz);
 }
 
 /*
