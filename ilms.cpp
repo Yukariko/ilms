@@ -162,7 +162,7 @@ void Ilms::proc_bf_add()
  * 처음 노드일 경우만 해당하며, 부모에는 블룸필터 추가로 전송
  */
 
-void Ilms::proc_data_add(char *buf, int len)
+void Ilms::proc_data_add()
 {
 	long long data;
 	if(!sc.next_value(data))
@@ -182,7 +182,7 @@ void Ilms::proc_data_add(char *buf, int len)
  * 3) 자식필터에 데이터가 없다면 부모노드로 올라감. 부모노드에서 내려온 상태라면 부모에 검색 실패 전송 
  */
 
-void Ilms::proc_data_search(char *buf, int len)
+void Ilms::proc_data_search()
 {
 	long long data;
 	char *ip;
@@ -249,7 +249,7 @@ void Ilms::proc_data_search_fail()
 
 	char res[BUF_SIZE];
 
-	int rlen = search(fail_data,res,BUS_SIZE);
+	int rlen = search(fail_data,res,BUF_SIZE);
 	if(rlen == 0)
 		return;
 
