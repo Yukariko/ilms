@@ -26,6 +26,8 @@ public:
 	std::vector<Node> getPeer();
 
 protected:
+	void error_handling(const char *message);
+	
 	// is parent Node always one?
 	Node *parent;
 	std::vector<Node> child;

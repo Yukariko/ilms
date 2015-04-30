@@ -40,14 +40,14 @@ Tree::Tree()
 
 	if(!fp)
 	{
-		exit(1);
+		error_handling("fopen failed");
 	}
 
 	char buf[256];
 	
 	if(!fgets(buf,sizeof(buf),fp))
 	{
-		exit(1);
+		error_handling("fgets failed");
 	}
 
 	parent = new Node(buf);
@@ -55,28 +55,28 @@ Tree::Tree()
 	int num;
 	if(fscanf(fp,"%d ",&num) != 1)
 	{
-		exit(1);
+		error_handling("fscanf failed");
 	}
 
 	for(int i=0;i<num;i++)
 	{
 		if(!fgets(buf,sizeof(buf),fp))
 		{
-			exit(1);
+			error_handling("fgets failed");
 		}
 		child.push_back(Node(buf));
 	}
 
 	if(fscanf(fp,"%d ",&num) != 1)
 	{
-		exit(1);
+		error_handling("fscanf failed");
 	}
 
 	for(int i=0;i<num;i++)
 	{
 		if(!fgets(buf,sizeof(buf),fp))
 		{
-			exit(1);
+			error_handling("fgets failed");
 		}
 		peer.push_back(Node(buf));
 	}

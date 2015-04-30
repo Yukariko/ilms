@@ -35,7 +35,6 @@ public:
 	void proc_data_delete();
 
 private:
-	void error_handling(const char *message);
 
 	Bloomfilter *myFilter;
 	Bloomfilter *childFilter;

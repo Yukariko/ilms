@@ -329,11 +329,11 @@ void Ilms::insert(long long key, long long value)
 {
 
 }
-int search(long long key,char *buf, int len)
+int Ilms::search(long long key,char *buf, int len)
 {
 	return 1;
 }
-bool remove(long long key)
+bool Ilms::remove(long long key)
 {
 	return true;
 }
