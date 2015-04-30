@@ -269,6 +269,11 @@ void Ilms::proc_data_search_fail()
 	insert(fail_data, count);
 }
 
+/*
+ * 데이터 삭제
+ * 데이터 검색 매커니즘에서 검색후 알림 대신 삭제
+ */
+
 void Ilms::proc_data_delete()
 {
 	long long data;
