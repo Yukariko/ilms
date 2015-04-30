@@ -10,6 +10,11 @@
 #define CMD_DATA_DELETE						0x13
 #define CMD_DATA_REPLACE					0x14
 
+#define MARK_SEARCH_FAIL					0x8000000000000000
+#define MARK_UP										0x01
+#define MARK_DOWN									0x00
+
+
 /*
  * 테스트 해시 함수
  */
@@ -32,6 +37,8 @@ long long test11(long long data){return data*1013*1327;}
  * 설정들을 불러오고
  * 블룸필터를 초기화 해줌
  * 해시 함수 정의 필요
+ * 소켓의 초기화
+ * UDP 통신이며 포트는 7979
  */
 
 const long long defaultSize = 8LL * 1024 * 1024;
@@ -71,6 +78,11 @@ Ilms::~Ilms()
 	close(sock);
 }
 
+/*
+ * 서버 동작 시작
+ * 입력을 받아와 명령에 따라 동작 수행
+ */
+
 void Ilms::start()
 {
 	char buf[BUF_SIZE];
@@ -83,18 +95,26 @@ void Ilms::start()
 
 		if(len > 0)
 		{
-			char cmd = buf[0];
+			sc = Scanner(buf, len);
+
+			char cmd;
+			if(!sc.next_value(cmd))
+				continue;
+
 			switch(cmd)
 			{
-			case CMD_BF_ADD: proc_bf_add(buf,len); break;
-			case CMD_DATA_ADD: proc_data_add(buf,len); break;
-			case CMD_DATA_SEARCH: proc_data_search(buf,len); break;
-
+			case CMD_BF_ADD: proc_bf_add(); break;
+			case CMD_DATA_ADD: proc_data_add(); break;
+			case CMD_DATA_SEARCH: proc_data_search(); break;
+			case CMD_DATA_SEARCH_FAIL: proc_data_search_fail(); break;
 			}
 		}
 	}
 }
 
+/*
+ * 오류가 발생시 해당 오류를 출력하고 종료
+ */
 
 void Ilms::error_handling(char *message)
 {
@@ -102,6 +122,10 @@ void Ilms::error_handling(char *message)
 	fputc('\n',stderr);
 	exit(1);
 }
+
+/*
+ * 버퍼 전송
+ */
 
 void Ilms::send(const char *ip,char *buf,int len)
 {
@@ -116,56 +140,169 @@ void Ilms::send(const char *ip,char *buf,int len)
 	sendto(sock, buf, len, 0, (struct sockaddr *)&clnt_adr, &clnt_adr_sz);
 }
 
-void Ilms::proc_bf_add(char *buf, int len)
+/*
+ * 블룸필터 데이터 추가
+ * 부모노드에도 추가해야 하므로 버퍼그대로 전송
+ */
+
+void Ilms::proc_bf_add()
 {
-	long long data = *(long long *)(buf+1);
+	long long data;
+	if(!sc.next_value(data))
+		return;
 	childFilter.insert(data);
-	this->send(tree->getParent().getIp(), buf, len);
+	this->send(tree->getParent().getIp(), sc.buf, sc.len);
 }
+
+/*
+ * 데이터 추가. 블룸필터에도 추가해야함
+ * 처음 노드일 경우만 해당하며, 부모에는 블룸필터 추가로 전송
+ */
 
 void Ilms::proc_data_add(char *buf, int len)
 {
-	long long data = *(long long *)(buf+1);
+	long long data;
+	if(!sc.next_value(data))
+		return;
+
 	myFilter.insert(data);
 	insert(data);
 
 	buf[0] = CMD_BF_ADD;
-	this->send(tree->getParent().getIp(), buf, len);
+	this->send(tree->getParent().getIp(), sc.buf, sc.len);
 }
+
+/*
+ * 데이터 검색. 다음의 순서로 동작
+ * 1) 자신의 필터에 데이터가 있다면 자신의 DB에서 검색. 검색 결과가 있다면 처음 노드에 직접 전송
+ * 2) 없다면 자식 필터를 확인하고, 있다면 자식들에 대해 검색 전송
+ * 3) 자식필터에 데이터가 없다면 부모노드로 올라감. 부모노드에서 내려온 상태라면 부모에 검색 실패 전송 
+ */
 
 void Ilms::proc_data_search(char *buf, int len)
 {
-	long long data = *(long long *)(buf+1);
-	char *ip = buf+9;
+	long long data;
+	char *ip;
+	char *ip_org;
+
+	if(!sc.next_value(data))
+		return;
+	if(!sc.next_value(ip))
+		return;
+	if(!sc.next_value(ip_org))
+		return;
+	
+	char &up_down = *sc.get_cur();
+
 	if(myFilter.lookup(data))
 	{
-		int rlen = search(data);
+		char res[BUF_SIZE];
+		int rlen = search(data,res,BUF_SIZE);
 
 		if(rlen > 0)
 		{
-
+			this->send(ip_org, res, rlen);
 			return;
 		}
 	}
 
-	if(child.size() == 0)
-	{
-		buf[0] = CMD_DATA_SEARCH_FAIL;
-		//~~
-
-		
-	}
-
 	if(childFilter.lookup(data))
 	{
+		insert(data | MARK_SEARCH_FAIL, child.size() - (up_down == MARK_UP));
+
+		up_down = MARK_DOWN;
+
 		for(int i=0;i<child.size();i++)
 		{
 			if(strcmp(ip,child[i].getIp()))
-				this->send(child[i].getIp(), buf, len);
+				this->send(child[i].getIp(), sc.buf, sc.len);
 		}
 	}
 	else
 	{
-		this->send(parent->getIp(), buf, len);
+		if(up_down == MARK_DOWN)
+		{
+			sc.buf[0] = CMD_DATA_SEARCH_FAIL;
+			sc.buf[sc.len++] = CMD_DATA_SEARCH_FAIL;
+		}
+
+		up_down = MARK_UP;
+		this->send(parent->getIp(), sc.buf, sc.len);
+	}
+}
+
+/*
+ * 데이터 검색 실패. 노드에 false positive가 존재하는 상황
+ * 다른 노드들에 대해
+ */
+
+void Ilms::proc_data_search_fail()
+{
+	long long data;
+	if(!sc.next_value(data))
+		return;
+
+	long long fail_data = data | MARK_SEARCH_FAIL;
+
+	char res[BUF_SIZE];
+
+	int rlen = search(fail_data,res,BUS_SIZE);
+	if(rlen == 0)
+		return;
+
+	Scanner rsc = Scanner(res,rlen);
+
+	long long count;
+
+	rsc.next_value(count);
+
+	if(--count == 0)
+	{
+		remove(fail_data);
+
+		sc.buf[0] = sc.buf[--sc.len];
+
+		this->send(parent->getIp(), sc.buf, sc.len);
+		return;
+	}
+
+	insert(fail_data, count);
+}
+
+void Ilms::proc_data_delete()
+{
+	long long data;
+	if(!sc.next_value(data))
+		return;
+
+	char &up_down = sc.get_cur();
+
+	if(myFilter.lookup(data))
+	{
+		if(remove(data))
+			return;
+	}
+
+	if(childFilter.lookup(data))
+	{
+		insert(data | MARK_SEARCH_FAIL, child.size() - (up_down == MARK_UP));
+
+		up_down = MARK_DOWN;
+
+		for(int i=0;i<child.size();i++)
+		{
+			if(strcmp(ip,child[i].getIp()))
+				this->send(child[i].getIp(), sc.buf, sc.len);
+		}
+	}
+	else
+	{
+		if(up_down == MARK_DOWN)
+		{
+			sc.buf[0] = CMD_DATA_SEARCH_FAIL;
+			sc.buf[sc.len++] = CMD_DATA_DELETE;
+		}
+		up_down = MARK_UP;
+		this->send(parent->getIp(), sc.buf, sc.len);
 	}
 }
