@@ -32,6 +32,7 @@ public:
 	void proc_data_add();
 	void proc_data_search();
 	void proc_data_search_fail();
+	void proc_data_delete();
 
 private:
 	void error_handling(const char *message);

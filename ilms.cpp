@@ -154,7 +154,7 @@ void Ilms::proc_bf_add()
 	if(!sc.next_value(data))
 		return;
 	childFilter->insert(data);
-	this->send(tree->getParent().getIp(), sc.buf, sc.len);
+	this->send(parent->getIp(), sc.buf, sc.len);
 }
 
 /*
@@ -165,14 +165,18 @@ void Ilms::proc_bf_add()
 void Ilms::proc_data_add()
 {
 	long long data;
+	long long str;
 	if(!sc.next_value(data))
 		return;
 
-	myFilter->insert(data);
-	insert(data);
+	if(!sc.next_value(str))
+		return;
 
-	buf[0] = CMD_BF_ADD;
-	this->send(tree->getParent().getIp(), sc.buf, sc.len);
+	myFilter->insert(data);
+	insert(data,str);
+
+	sc.buf[0] = CMD_BF_ADD;
+	this->send(parent->getIp(), sc.buf, sc.len);
 }
 
 /*
