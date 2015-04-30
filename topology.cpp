@@ -124,3 +124,15 @@ std::vector<Node> Tree::getPeer()
 {
 	return peer;
 }
+
+
+/*
+ * 오류가 발생시 해당 오류를 출력하고 종료
+ */
+
+void Tree::error_handling(const char *message)
+{
+	fputs(message,stderr);
+	fputc('\n',stderr);
+	exit(1);
+}
