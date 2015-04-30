@@ -219,7 +219,7 @@ void Ilms::proc_data_search()
 
 		up_down = MARK_DOWN;
 
-		for(int i=0;i<child.size();i++)
+		for(unsigned int i=0;i<child.size();i++)
 		{
 			if(strcmp(ip,child[i].getIp()))
 				this->send(child[i].getIp(), sc.buf, sc.len);
@@ -284,7 +284,12 @@ void Ilms::proc_data_search_fail()
 void Ilms::proc_data_delete()
 {
 	long long data;
+	char *ip;
+
 	if(!sc.next_value(data))
+		return;
+
+	if(!sc.next_value(ip))
 		return;
 
 	char &up_down = *sc.get_cur();
@@ -301,7 +306,7 @@ void Ilms::proc_data_delete()
 
 		up_down = MARK_DOWN;
 
-		for(int i=0;i<child.size();i++)
+		for(unsigned int i=0;i<child.size();i++)
 		{
 			if(strcmp(ip,child[i].getIp()))
 				this->send(child[i].getIp(), sc.buf, sc.len);
