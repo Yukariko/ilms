@@ -61,7 +61,7 @@ bool Scanner::next_value(char *&val)
 	return true;
 }
 
-char *get_cur()
+char *Scanner::get_cur()
 {
 	return cur;
 }

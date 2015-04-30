@@ -116,7 +116,7 @@ void Ilms::start()
  * 오류가 발생시 해당 오류를 출력하고 종료
  */
 
-void Ilms::error_handling(char *message)
+void Ilms::error_handling(const char *message)
 {
 	fputs(message,stderr);
 	fputc('\n',stderr);

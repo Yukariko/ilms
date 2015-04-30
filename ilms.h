@@ -9,10 +9,10 @@
 #include "topology.h"
 #include "scanner.h"
 
-#define BUF_SIZE 256;
+#define BUF_SIZE 256
 #define PORT 7979
 
-class Ilms : public tree
+class Ilms : public Tree
 {
 public:
 	Ilms();
@@ -34,7 +34,7 @@ public:
 	void proc_data_search_fail();
 
 private:
-	void error_handling(char *message);
+	void error_handling(const char *message);
 
 	Bloomfilter *myFilter;
 	Bloomfilter *childFilter;
