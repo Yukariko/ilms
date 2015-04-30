@@ -44,6 +44,13 @@ Tree::Tree()
 	}
 
 	char buf[256];
+
+	if(!fgets(buf,sizeof(buf),fp))
+	{
+		error_handling("fgets failed");
+	}
+
+	me = new Node(buf);
 	
 	if(!fgets(buf,sizeof(buf),fp))
 	{

@@ -202,6 +202,8 @@ void Ilms::proc_data_search()
 		}
 	}
 
+	strcpy(ip, me->getIp());
+
 	if(childFilter->lookup(data))
 	{
 		insert(data | MARK_SEARCH_FAIL, child.size() - (up_down == MARK_UP));
@@ -288,6 +290,8 @@ void Ilms::proc_data_delete()
 		if(remove(data))
 			return;
 	}
+
+	strcpy(ip, me->getIp());
 
 	if(childFilter->lookup(data))
 	{

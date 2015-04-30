@@ -1,5 +1,9 @@
 #include "scanner.h"
 
+/*
+ * 스캐너 기본 생성자
+ * 사실상 안쓰임
+ */
 
 Scanner::Scanner()
 {
@@ -9,6 +13,11 @@ Scanner::Scanner()
 	len = 0;
 }
 
+/*
+ * 스캐너 생성자
+ * 버퍼를 받고 설정들 초기화
+ */
+
 Scanner::Scanner(char *buf, int len)
 {
 	this->buf = buf;
@@ -16,6 +25,11 @@ Scanner::Scanner(char *buf, int len)
 	this->len = 0;
 	cur = buf;
 }
+
+/*
+ * 스캐너 변수 읽기
+ * 1바이트를 읽어 char형 변수 반환
+ */
 
 bool Scanner::next_value(char &val)
 {
@@ -25,6 +39,11 @@ bool Scanner::next_value(char &val)
 	return true;
 }
 
+/*
+ * 스캐너 변수 읽기
+ * 1바이트를 읽어 unsigned char형 변수 반환
+ */
+
 bool Scanner::next_value(unsigned char &val)
 {
 	if(isEnd(1)) return false;
@@ -32,6 +51,11 @@ bool Scanner::next_value(unsigned char &val)
 	cur += 1;
 	return true;	
 }
+
+/*
+ * 스캐너 변수 읽기
+ * 4바이트를 읽어 int형 변수 반환
+ */
 
 bool Scanner::next_value(int &val)
 {
@@ -41,13 +65,23 @@ bool Scanner::next_value(int &val)
 	return true;
 }
 
+/*
+ * 스캐너 변수 읽기
+ * 8바이트를 읽어 long long형 변수 반환
+ */
+
 bool Scanner::next_value(long long &val)
 {
 	if(isEnd(8)) return false;
 	val = *(long long *)cur;
-	cur += 4;
+	cur += 8;
 	return true;
 }
+
+/*
+ * 스캐너 변수 읽기
+ * char형 포인터 변수 반환
+ */
 
 bool Scanner::next_value(char *&val)
 {
@@ -61,10 +95,18 @@ bool Scanner::next_value(char *&val)
 	return true;
 }
 
+/*
+ * 스캐너 현재 위치 반환
+ */
+
 char *Scanner::get_cur()
 {
 	return cur;
 }
+
+/*
+ * 스캐너의 끝범위 반환
+ */
 
 bool Scanner::isEnd(int pos)
 {

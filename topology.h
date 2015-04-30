@@ -27,8 +27,9 @@ public:
 
 protected:
 	void error_handling(const char *message);
-	
+
 	// is parent Node always one?
+	Node *me;
 	Node *parent;
 	std::vector<Node> child;
 	std::vector<Node> peer;
