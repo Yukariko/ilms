@@ -19,9 +19,9 @@ Node::Node(std::string ip)
  * ip를 반환하는 함수
  */
 
-std::string Node::getIp()
+const char *Node::getIp()
 {
-	return ip;
+	return ip.c_str();
 }
 
 /*

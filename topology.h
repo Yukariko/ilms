@@ -10,7 +10,7 @@ class Node
 {
 public:
 	Node(std::string ip);
-	std::string getIp();
+	const char *getIp();
 
 private:
 	std::string ip;
@@ -25,7 +25,7 @@ public:
 	std::vector<Node> getChild();
 	std::vector<Node> getPeer();
 
-private:
+protected:
 	// is parent Node always one?
 	Node *parent;
 	std::vector<Node> child;
