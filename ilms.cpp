@@ -323,17 +323,32 @@ void Ilms::proc_data_delete()
 	}
 }
 
+/*
+ * DB에 데이터 넣기
+ * key, value 쌍으로 입력
+ */
 
 void Ilms::insert(char *key,int klen, char *val,int vlen)
 {
 	leveldb::Status s = db->Put(leveldb::WriteOptions(),leveldb::Slice(key,klen),leveldb::Slice(val,vlen));
 	assert(s.ok());
 }
+
+/*
+ * DB에 데이터 검색
+ */
+
 bool Ilms::search(char *key,int klen,std::string &val)
 {
 	leveldb::Status s = db->Get(leveldb::ReadOptions(),leveldb::Slice(key,klen),&val);
 	return s.ok();
 }
+
+/*
+ * DB에 데이터 삭제
+ * 존재여부 확인을 위해 한번 검색함(효율 문제)
+ */
+
 bool Ilms::remove(char *key,int klen)
 {
 	std::string ret;
