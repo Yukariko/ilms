@@ -124,7 +124,7 @@ void Ilms::start()
  * 버퍼 전송
  */
 
-void Ilms::send(const char *ip,char *buf,int len)
+void Ilms::send(const char *ip,const char *buf,int len)
 {
 	struct sockaddr_in clnt_adr;
 	socklen_t clnt_adr_sz = sizeof(clnt_adr);
@@ -214,7 +214,7 @@ void Ilms::proc_data_search()
 	if(childFilter->lookup(data))
 	{
 		unsigned char count = child.size() - (up_down == MARK_UP);
-		insert(data,8+ip_len+1, &count, 1);
+		insert(data,8+ip_len+1, (char *)&count, 1);
 
 		up_down = MARK_DOWN;
 
@@ -255,11 +255,7 @@ void Ilms::proc_data_search_fail()
 	if(!search(data,8+ip_len+1,ret))
 		return;
 
-	Scanner rsc = Scanner(ret.c_str(),ret.length());
-
-	unsigned char count;
-
-	rsc.next_value(count);
+	unsigned char count = *(unsigned char *)ret.c_str();
 
 	if(--count == 0)
 	{
@@ -271,7 +267,7 @@ void Ilms::proc_data_search_fail()
 		return;
 	}
 
-	insert(data,8+ip_len+1, &count, 1);
+	insert(data,8+ip_len+1, (char *)&count, 1);
 }
 
 /*
@@ -303,7 +299,7 @@ void Ilms::proc_data_delete()
 	if(childFilter->lookup(data))
 	{
 		unsigned char count = child.size() - (up_down == MARK_UP);
-		insert(data,8+ip_len+1, &count, 1);
+		insert(data,8+ip_len+1, (char *)&count, 1);
 
 		up_down = MARK_DOWN;
 
@@ -331,9 +327,9 @@ void Ilms::insert(char *key,int klen, char *val,int vlen);
 	leveldb::Status s = db->Put(leveldb::WriteOptions(),leveldb::Slice(key,klen),leveldb::Slice(val,vlen));
 	assert(s.ok());
 }
-bool Ilms::search(char *key,int klen,std::string &ret);
+bool Ilms::search(char *key,int klen,std::string &val);
 {
-	leveldb::Status s = db->Get(leveldb::WriteOptions(),leveldb::Slice(key,klen),&ret);
+	leveldb::Status s = db->Get(leveldb::WriteOptions(),leveldb::Slice(key,klen),&val);
 	return s.ok();
 }
 bool Ilms::remove(char *key,int klen);

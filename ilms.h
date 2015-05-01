@@ -24,11 +24,11 @@ public:
 	~Ilms();
 
 	void start();
-	void send(const char *ip,char *buf,int len);
+	void send(const char *ip,const char *buf,int len);
 
 	//data
 	void insert(char *key,int klen, char *val,int vlen);
-	bool search(char *key,int klen,char *buf, int len);
+	bool search(char *key,int klen,std::string &val);
 	bool remove(char *key, int klen);
 
 
