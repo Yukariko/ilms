@@ -283,6 +283,8 @@ void Ilms::proc_data_delete()
 	if(!sc.next_value(data,8))
 		return;
 
+	unsigned char ip_len = *(unsigned char *)sc.get_cur();
+
 	if(!sc.next_value(ip))
 		return;
 
@@ -322,17 +324,17 @@ void Ilms::proc_data_delete()
 }
 
 
-void Ilms::insert(char *key,int klen, char *val,int vlen);
+void Ilms::insert(char *key,int klen, char *val,int vlen)
 {
 	leveldb::Status s = db->Put(leveldb::WriteOptions(),leveldb::Slice(key,klen),leveldb::Slice(val,vlen));
 	assert(s.ok());
 }
-bool Ilms::search(char *key,int klen,std::string &val);
+bool Ilms::search(char *key,int klen,std::string &val)
 {
 	leveldb::Status s = db->Get(leveldb::WriteOptions(),leveldb::Slice(key,klen),&val);
 	return s.ok();
 }
-bool Ilms::remove(char *key,int klen);
+bool Ilms::remove(char *key,int klen)
 {
 	std::string ret;
 	if(!search(key,klen,ret))
