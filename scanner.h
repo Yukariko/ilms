@@ -12,6 +12,7 @@ public:
 	bool next_value(int &val);
 	bool next_value(long long &val);
 	bool next_value(char *&val);
+	bool next_value(char *&val, int len);
 
 	char *get_cur();
 

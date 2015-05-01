@@ -33,11 +33,12 @@ Bloomfilter::~Bloomfilter()
  * 데이터 등록
  */
 
-void Bloomfilter::insert(long long data)
+void Bloomfilter::insert(char *data)
 {
+	const long long find = *(long long *)data;
 	for(int i=0;i<numHash;i++)
 	{
-		const long long res = hash[i](data) % size;
+		const long long res = hash[i](find) % size;
 		field[res>>3] |= (1 << (res&7));
 	}
 }
@@ -46,11 +47,12 @@ void Bloomfilter::insert(long long data)
  * 데이터 검색
  */
 
-bool Bloomfilter::lookup(long long data)
+bool Bloomfilter::lookup(char *data)
 {
+	const long long find = *(long long *)data;
 	for(int i=0;i<numHash;i++)
 	{
-		const long long res = hash[i](data) % size;
+		const long long res = hash[i](find) % size;
 		if(!(field[res>>3] & (1 << (res&7))))
 			return false;
 	}

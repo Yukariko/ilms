@@ -63,6 +63,11 @@ Ilms::Ilms()
 	if(bind(sock, (struct sockaddr *)&serv_adr, sizeof(serv_adr)) == -1)
 		error_handling("bind() error");
 
+	// db init
+	options.create_if_missing = true;
+	leveldb::Status status = leveldb::DB::Open(options, DB_PATH, &db);
+	assert(status.ok());
+
 }
 
 /*
@@ -139,8 +144,8 @@ void Ilms::send(const char *ip,char *buf,int len)
 
 void Ilms::proc_bf_add()
 {
-	long long data;
-	if(!sc.next_value(data))
+	char *data;
+	if(!sc.next_value(data,8))
 		return;
 	childFilter->insert(data);
 	this->send(parent->getIp(), sc.buf, sc.len);
@@ -153,16 +158,17 @@ void Ilms::proc_bf_add()
 
 void Ilms::proc_data_add()
 {
-	long long data;
-	long long str;
-	if(!sc.next_value(data))
+	char *data;
+	char *value;
+	if(!sc.next_value(data,8))
 		return;
 
-	if(!sc.next_value(str))
+	if(!sc.next_value(value))
 		return;
 
 	myFilter->insert(data);
-	insert(data,str);
+
+	insert(data,8,value,*(unsigned char *)(value-1));
 
 	sc.buf[0] = CMD_BF_ADD;
 	this->send(parent->getIp(), sc.buf, sc.len);
@@ -177,12 +183,15 @@ void Ilms::proc_data_add()
 
 void Ilms::proc_data_search()
 {
-	long long data;
+	char *data;
 	char *ip;
 	char *ip_org;
 
-	if(!sc.next_value(data))
+	if(!sc.next_value(data,8))
 		return;
+
+	unsigned char ip_len = *(unsigned char *)sc.get_cur();
+
 	if(!sc.next_value(ip))
 		return;
 	if(!sc.next_value(ip_org))
@@ -192,12 +201,10 @@ void Ilms::proc_data_search()
 
 	if(myFilter->lookup(data))
 	{
-		char res[BUF_SIZE];
-		int rlen = search(data,res,BUF_SIZE);
-
-		if(rlen > 0)
+		std::string ret;
+		if(search(data,8,ret))
 		{
-			this->send(ip_org, res, rlen);
+			this->send(ip_org, ret.c_str(), ret.length());
 			return;
 		}
 	}
@@ -206,7 +213,8 @@ void Ilms::proc_data_search()
 
 	if(childFilter->lookup(data))
 	{
-		insert(data | MARK_SEARCH_FAIL, child.size() - (up_down == MARK_UP));
+		unsigned char count = child.size() - (up_down == MARK_UP);
+		insert(data,8+ip_len+1, &count, 1);
 
 		up_down = MARK_DOWN;
 
@@ -236,27 +244,26 @@ void Ilms::proc_data_search()
 
 void Ilms::proc_data_search_fail()
 {
-	long long data;
-	if(!sc.next_value(data))
+	char *data;
+	if(!sc.next_value(data,8))
 		return;
 
-	long long fail_data = data | MARK_SEARCH_FAIL;
+	unsigned char ip_len = *(unsigned char *)sc.get_cur();
 
-	char res[BUF_SIZE];
+	std::string ret;
 
-	int rlen = search(fail_data,res,BUF_SIZE);
-	if(rlen == 0)
+	if(!search(data,8+ip_len+1,ret))
 		return;
 
-	Scanner rsc = Scanner(res,rlen);
+	Scanner rsc = Scanner(ret.c_str(),ret.length());
 
-	long long count;
+	unsigned char count;
 
 	rsc.next_value(count);
 
 	if(--count == 0)
 	{
-		remove(fail_data);
+		remove(data,8+ip_len+1);
 
 		sc.buf[0] = sc.buf[--sc.len];
 
@@ -264,7 +271,7 @@ void Ilms::proc_data_search_fail()
 		return;
 	}
 
-	insert(fail_data, count);
+	insert(data,8+ip_len+1, &count, 1);
 }
 
 /*
@@ -274,10 +281,10 @@ void Ilms::proc_data_search_fail()
 
 void Ilms::proc_data_delete()
 {
-	long long data;
+	char *data;
 	char *ip;
 
-	if(!sc.next_value(data))
+	if(!sc.next_value(data,8))
 		return;
 
 	if(!sc.next_value(ip))
@@ -287,7 +294,7 @@ void Ilms::proc_data_delete()
 
 	if(myFilter->lookup(data))
 	{
-		if(remove(data))
+		if(remove(data,8))
 			return;
 	}
 
@@ -295,7 +302,8 @@ void Ilms::proc_data_delete()
 
 	if(childFilter->lookup(data))
 	{
-		insert(data | MARK_SEARCH_FAIL, child.size() - (up_down == MARK_UP));
+		unsigned char count = child.size() - (up_down == MARK_UP);
+		insert(data,8+ip_len+1, &count, 1);
 
 		up_down = MARK_DOWN;
 
@@ -318,15 +326,23 @@ void Ilms::proc_data_delete()
 }
 
 
-void Ilms::insert(long long key, long long value)
+void Ilms::insert(char *key,int klen, char *val,int vlen);
 {
+	leveldb::Status s = db->Put(leveldb::WriteOptions(),leveldb::Slice(key,klen),leveldb::Slice(val,vlen));
+	assert(s.ok());
+}
+bool Ilms::search(char *key,int klen,std::string &ret);
+{
+	leveldb::Status s = db->Get(leveldb::WriteOptions(),leveldb::Slice(key,klen),&ret);
+	return s.ok();
+}
+bool Ilms::remove(char *key,int klen);
+{
+	std::string ret;
+	if(!search(key,klen,ret))
+		return false;
 
-}
-int Ilms::search(long long key,char *buf, int len)
-{
-	return 1;
-}
-bool Ilms::remove(long long key)
-{
+	leveldb::Status s = db->Delete(leveldb::WriteOptions(),leveldb::Slice(key,klen));
+	assert(s.ok());
 	return true;
 }

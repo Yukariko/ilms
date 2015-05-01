@@ -5,12 +5,17 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 
+#include <leveldb/db.h>
+#include <leveldb/write_batch.h>
+
 #include "bloomfilter.h"
 #include "topology.h"
 #include "scanner.h"
 
 #define BUF_SIZE 256
 #define PORT 7979
+
+#define DB_PATH "./db"
 
 class Ilms : public Tree
 {
@@ -22,9 +27,9 @@ public:
 	void send(const char *ip,char *buf,int len);
 
 	//data
-	void insert(long long key, long long value);
-	int search(long long key,char *buf, int len);
-	bool remove(long long key);
+	void insert(char *key,int klen, char *val,int vlen);
+	bool search(char *key,int klen,char *buf, int len);
+	bool remove(char *key, int klen);
 
 
 	//process
@@ -35,6 +40,10 @@ public:
 	void proc_data_delete();
 
 private:
+
+	leveldb::DB* db;
+	leveldb::Options options;
+
 
 	Bloomfilter *myFilter;
 	Bloomfilter *childFilter;

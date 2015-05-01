@@ -96,6 +96,21 @@ bool Scanner::next_value(char *&val)
 }
 
 /*
+ * 스캐너 변수 읽기
+ * char형 포인터 변수 반환
+ */
+
+bool Scanner::next_value(char *&val, int len)
+{
+	if(isEnd(len)) return false;
+
+	val = cur;
+	cur += len;
+
+	return true;
+}
+
+/*
  * 스캐너 현재 위치 반환
  */
 
