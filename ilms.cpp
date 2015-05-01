@@ -331,7 +331,7 @@ void Ilms::insert(char *key,int klen, char *val,int vlen)
 }
 bool Ilms::search(char *key,int klen,std::string &val)
 {
-	leveldb::Status s = db->Get(leveldb::WriteOptions(),leveldb::Slice(key,klen),&val);
+	leveldb::Status s = db->Get(leveldb::ReadOptions(),leveldb::Slice(key,klen),&val);
 	return s.ok();
 }
 bool Ilms::remove(char *key,int klen)
