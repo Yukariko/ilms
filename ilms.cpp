@@ -122,7 +122,7 @@ void Ilms::start()
 
 			case REQ_DATA_ADD: req_data_add(); break;
 			case REQ_DATA_SEARCH: req_data_search(inet_ntoa(clnt_adr.sin_addr)); break;
-			case REQ_DATA_DELETE: req_data_delete(); break;
+			case REQ_DATA_DELETE: req_data_delete(inet_ntoa(clnt_adr.sin_addr)); break;
 			}
 		}
 	}
