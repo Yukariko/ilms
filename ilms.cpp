@@ -19,6 +19,15 @@
 #define MARK_DOWN									0x00
 
 
+#define MODE 1
+#ifdef MODE
+#define DEBUG(s) (std::cout << s << std::endl)
+#endif
+
+#ifndef MODE
+#define DEBUG(s) 0
+#endif
+
 /*
  * 테스트 해시 함수
  */
@@ -105,7 +114,7 @@ void Ilms::start()
 		int len = recvfrom(sock, buf, BUF_SIZE, 0,
 					(struct sockaddr*)&clnt_adr, &clnt_adr_sz);
 
-		std::cout << "Recieve OK!" << std::endl;
+		DEBUG("Recieve OK!");
 
 		if(len > 0)
 		{
@@ -114,6 +123,8 @@ void Ilms::start()
 			char cmd;
 			if(!sc.next_value(cmd))
 				continue;
+
+			DEBUG("Protocol OK!");
 
 			switch(cmd)
 			{
@@ -148,7 +159,7 @@ void Ilms::send(const char *ip,const char *buf,int len)
 
 	sendto(sock, buf, len, 0, (struct sockaddr *)&clnt_adr, clnt_adr_sz);
 
-	std::cout << "Send OK!" << std::endl;
+	DEBUG("Send OK!");
 }
 
 /*
@@ -180,9 +191,13 @@ void Ilms::proc_data_add()
 	if(!sc.next_value(value))
 		return;
 
+	DEBUG("PROC_DATA_ADD OK!");
+
 	myFilter->insert(data);
 
 	insert(data,8,value,*(unsigned char *)(value-1));
+
+	DEBUG("DATA_INSERT OK!");
 
 	sc.buf[0] = CMD_BF_ADD;
 	this->send(parent->getIp(), sc.buf, sc.len);
