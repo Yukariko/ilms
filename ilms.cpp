@@ -126,16 +126,19 @@ void Ilms::start()
 
 			DEBUG("Protocol OK!");
 
+			char *ip = inet_ntoa(clnt_adr.sin_addr);
+
 			switch(cmd)
 			{
 			case CMD_BF_ADD: proc_bf_add(); break;
 			case CMD_DATA_ADD: proc_data_add(); break;
-			case CMD_DATA_SEARCH: proc_data_search(); break;
+			case CMD_DATA_SEARCH: proc_data_search(ip); break;
 			case CMD_DATA_SEARCH_FAIL: proc_data_search_fail(); break;
+			case CMD_DATA_DELETE: proc_data_delete(ip); break;
 
 			case REQ_DATA_ADD: req_data_add(); break;
-			case REQ_DATA_SEARCH: req_data_search(inet_ntoa(clnt_adr.sin_addr)); break;
-			case REQ_DATA_DELETE: req_data_delete(inet_ntoa(clnt_adr.sin_addr)); break;
+			case REQ_DATA_SEARCH: req_data_search(ip); break;
+			case REQ_DATA_DELETE: req_data_delete(ip); break;
 			}
 		}
 	}
@@ -212,13 +215,10 @@ void Ilms::proc_data_add()
  * 3) 자식필터에 데이터가 없다면 부모노드로 올라감. 부모노드에서 내려온 상태라면 부모에 검색 실패 전송 
  */
 
-void Ilms::proc_data_search()
+void Ilms::proc_data_search(char *ip)
 {
 	char *data;
 	char *ip_org;
-	char *ip;
-	char ip_before[BUF_SIZE];
-
 
 	if(!sc.next_value(data,8))
 		return;
@@ -226,9 +226,6 @@ void Ilms::proc_data_search()
 	unsigned char ip_org_len = *(unsigned char *)sc.get_cur();
 
 	if(!sc.next_value(ip_org))
-		return;
-
-	if(!sc.next_value(ip))
 		return;
 
 	char &up_down = *sc.get_cur();
@@ -243,9 +240,6 @@ void Ilms::proc_data_search()
 		}
 	}
 
-	strcpy(ip_before, ip);
-	strcpy(ip, me->getIp());
-
 	if(childFilter->lookup(data))
 	{
 		unsigned char count = child.size() - (up_down == MARK_UP);
@@ -256,7 +250,7 @@ void Ilms::proc_data_search()
 
 		for(unsigned int i=0;i<child.size();i++)
 		{
-			if(strcmp(ip_before,child[i].getIp()))
+			if(strcmp(ip,child[i].getIp()))
 				this->send(child[i].getIp(), sc.buf, sc.len);
 		}
 	}
@@ -311,12 +305,10 @@ void Ilms::proc_data_search_fail()
  * 데이터 검색 매커니즘에서 검색후 알림 대신 삭제
  */
 
-void Ilms::proc_data_delete()
+void Ilms::proc_data_delete(char *ip)
 {
 	char *data;
 	char *ip_org;
-	char *ip;
-	char ip_before[BUF_SIZE];
 
 	if(!sc.next_value(data,8))
 		return;
@@ -324,9 +316,6 @@ void Ilms::proc_data_delete()
 	unsigned char ip_org_len = *(unsigned char *)sc.get_cur();
 
 	if(!sc.next_value(ip_org))
-		return;
-
-	if(!sc.next_value(ip))
 		return;
 
 	char &up_down = *sc.get_cur();
@@ -337,9 +326,6 @@ void Ilms::proc_data_delete()
 			return;
 	}
 
-	strcpy(ip_before, ip);
-	strcpy(ip, me->getIp());
-
 	if(childFilter->lookup(data))
 	{
 		unsigned char count = child.size() - (up_down == MARK_UP);
@@ -349,7 +335,7 @@ void Ilms::proc_data_delete()
 
 		for(unsigned int i=0;i<child.size();i++)
 		{
-			if(strcmp(ip_before,child[i].getIp()))
+			if(strcmp(ip,child[i].getIp()))
 				this->send(child[i].getIp(), sc.buf, sc.len);
 		}
 	}
@@ -386,10 +372,6 @@ void Ilms::req_data_search(char *ip_org)
 
 	*pos = ip_org_len + 1;
 	strcpy(pos + 1, ip_org);
-	pos += *pos + 1;
-
-	*pos = me->length() + 1;
-	strcpy(pos + 1, me->getIp());
 	pos += *pos + 1;
 
 	char &up_down = *pos;
@@ -447,10 +429,6 @@ void Ilms::req_data_delete(char *ip_org)
 
 	*pos = ip_org_len + 1;
 	strcpy(pos + 1, ip_org);
-	pos += *pos + 1;
-
-	*pos = me->length() + 1;
-	strcpy(pos + 1, me->getIp());
 	pos += *pos + 1;
 
 	char &up_down = *pos;
