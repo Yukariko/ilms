@@ -10,6 +10,10 @@
 #define CMD_DATA_DELETE						0x13
 #define CMD_DATA_REPLACE					0x14
 
+#define REQ_DATA_ADD							0x20
+#define REQ_DATA_SEARCH						0x21
+#define REQ_DATA_DELETE						0x22
+
 #define MARK_SEARCH_FAIL					0x8000000000000000
 #define MARK_UP										0x01
 #define MARK_DOWN									0x00
@@ -115,6 +119,10 @@ void Ilms::start()
 			case CMD_DATA_ADD: proc_data_add(); break;
 			case CMD_DATA_SEARCH: proc_data_search(); break;
 			case CMD_DATA_SEARCH_FAIL: proc_data_search_fail(); break;
+
+			case REQ_DATA_ADD: req_data_add(); break;
+			case REQ_DATA_SEARCH: req_data_search(inet_ntoa(clnt_adr.sin_addr)); break;
+			case REQ_DATA_DELETE: req_data_delete(); break;
 			}
 		}
 	}
@@ -184,19 +192,22 @@ void Ilms::proc_data_add()
 void Ilms::proc_data_search()
 {
 	char *data;
-	char *ip;
 	char *ip_org;
+	char *ip;
+	char ip_before[BUF_SIZE];
+
 
 	if(!sc.next_value(data,8))
 		return;
 
-	unsigned char ip_len = *(unsigned char *)sc.get_cur();
+	unsigned char ip_org_len = *(unsigned char *)sc.get_cur();
+
+	if(!sc.next_value(ip_org))
+		return;
 
 	if(!sc.next_value(ip))
 		return;
-	if(!sc.next_value(ip_org))
-		return;
-	
+
 	char &up_down = *sc.get_cur();
 
 	if(myFilter->lookup(data))
@@ -209,18 +220,20 @@ void Ilms::proc_data_search()
 		}
 	}
 
+	strcpy(ip_before, ip);
 	strcpy(ip, me->getIp());
 
 	if(childFilter->lookup(data))
 	{
 		unsigned char count = child.size() - (up_down == MARK_UP);
-		insert(data,8+ip_len+1, (char *)&count, 1);
+
+		insert(data,8 + ip_org_len, (char *)&count, 1);
 
 		up_down = MARK_DOWN;
 
 		for(unsigned int i=0;i<child.size();i++)
 		{
-			if(strcmp(ip,child[i].getIp()))
+			if(strcmp(ip_before,child[i].getIp()))
 				this->send(child[i].getIp(), sc.buf, sc.len);
 		}
 	}
@@ -252,14 +265,14 @@ void Ilms::proc_data_search_fail()
 
 	std::string ret;
 
-	if(!search(data,8+ip_len+1,ret))
+	if(!search(data,8+ip_len,ret))
 		return;
 
 	unsigned char count = *(unsigned char *)ret.c_str();
 
 	if(--count == 0)
 	{
-		remove(data,8+ip_len+1);
+		remove(data,8+ip_len);
 
 		sc.buf[0] = sc.buf[--sc.len];
 
@@ -267,7 +280,7 @@ void Ilms::proc_data_search_fail()
 		return;
 	}
 
-	insert(data,8+ip_len+1, (char *)&count, 1);
+	insert(data,8+ip_len, (char *)&count, 1);
 }
 
 /*
@@ -278,12 +291,17 @@ void Ilms::proc_data_search_fail()
 void Ilms::proc_data_delete()
 {
 	char *data;
+	char *ip_org;
 	char *ip;
+	char ip_before[BUF_SIZE];
 
 	if(!sc.next_value(data,8))
 		return;
 
-	unsigned char ip_len = *(unsigned char *)sc.get_cur();
+	unsigned char ip_org_len = *(unsigned char *)sc.get_cur();
+
+	if(!sc.next_value(ip_org))
+		return;
 
 	if(!sc.next_value(ip))
 		return;
@@ -296,18 +314,19 @@ void Ilms::proc_data_delete()
 			return;
 	}
 
+	strcpy(ip_before, ip);
 	strcpy(ip, me->getIp());
 
 	if(childFilter->lookup(data))
 	{
 		unsigned char count = child.size() - (up_down == MARK_UP);
-		insert(data,8+ip_len+1, (char *)&count, 1);
+		insert(data,8+ip_org_len, (char *)&count, 1);
 
 		up_down = MARK_DOWN;
 
 		for(unsigned int i=0;i<child.size();i++)
 		{
-			if(strcmp(ip,child[i].getIp()))
+			if(strcmp(ip_before,child[i].getIp()))
 				this->send(child[i].getIp(), sc.buf, sc.len);
 		}
 	}
@@ -318,6 +337,122 @@ void Ilms::proc_data_delete()
 			sc.buf[0] = CMD_DATA_SEARCH_FAIL;
 			sc.buf[sc.len++] = CMD_DATA_DELETE;
 		}
+		up_down = MARK_UP;
+		this->send(parent->getIp(), sc.buf, sc.len);
+	}
+}
+
+
+void Ilms::req_data_add()
+{
+	sc.buf[0] = CMD_DATA_ADD;
+	proc_data_add();
+}
+
+void Ilms::req_data_search(char *ip_org)
+{
+	sc.buf[0] = CMD_DATA_SEARCH;
+	char *data;
+	char *ip;
+
+	if(!sc.next_value(data,8))
+		return;
+
+	unsigned char ip_org_len = strlen(ip_org);
+
+	char *pos = sc.get_cur();
+
+	*pos = ip_org_len + 1;
+	strcpy(pos + 1, ip_org);
+	pos += *pos + 1;
+
+	*pos = me->length() + 1;
+	strcpy(pos + 1, me->c_str());
+	pos += *pos + 1;
+
+	char &up_down = *pos;
+	pos++;
+
+	sc.len = pos - sc.buf;
+
+	char &up_down = *sc.get_cur();
+
+	if(myFilter->lookup(data))
+	{
+		std::string ret;
+		if(search(data,8,ret))
+		{
+			this->send(ip_org, ret.c_str(), ret.length());
+			return;
+		}
+	}
+
+	if(childFilter->lookup(data))
+	{
+		unsigned char count = child.size();
+		insert(data,8+ip_org_len, (char *)&count, 1);
+
+		up_down = MARK_DOWN;
+
+		for(unsigned int i=0;i<child.size();i++)
+		{
+			this->send(child[i].getIp(), sc.buf, sc.len);
+		}
+	}
+	else
+	{
+		up_down = MARK_UP;
+		this->send(parent->getIp(), sc.buf, sc.len);
+	}
+}
+
+void Ilms::req_data_delete(char *ip_org)
+{
+	sc.buf[0] = CMD_DATA_DELETE;
+
+	char *data;
+	
+	if(!sc.next_value(data,8))
+		return;
+
+	if(myFilter->lookup(data))
+	{
+		if(remove(data,8))
+			return;
+	}
+
+	unsigned char ip_org_len = strlen(ip_org);
+
+	char *pos = sc.get_cur();
+
+	*pos = ip_org_len + 1;
+	strcpy(pos + 1, ip_org);
+	pos += *pos + 1;
+
+	*pos = me->length() + 1;
+	strcpy(pos + 1, me->c_str());
+	pos += *pos + 1;
+
+	char &up_down = *pos;
+	pos++;
+	
+	sc.len = pos - sc.buf;
+  
+
+	if(childFilter->lookup(data))
+	{
+		unsigned char count = child.size();
+		insert(data,8+ip_len+1, (char *)&count, 1);
+
+		up_down = MARK_DOWN;
+
+		for(unsigned int i=0;i<child.size();i++)
+		{
+			this->send(child[i].getIp(), sc.buf, sc.len);
+		}
+	}
+	else
+	{
 		up_down = MARK_UP;
 		this->send(parent->getIp(), sc.buf, sc.len);
 	}

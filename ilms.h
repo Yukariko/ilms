@@ -39,6 +39,11 @@ public:
 	void proc_data_search_fail();
 	void proc_data_delete();
 
+	//request
+	void req_data_add();
+	void req_data_search(char *ip_org);
+	void req_data_delete(char *ip_org);
+
 private:
 
 	leveldb::DB* db;
