@@ -69,6 +69,6 @@ void IlmsCli::send(const char *buf,int len)
 	clnt_adr.sin_family = AF_INET;
 	clnt_adr.sin_addr.s_addr = inet_addr(ip.c_str());
 	clnt_adr.sin_port = htons(PORT);
-
+ 
 	sendto(sock, buf, len, 0, (struct sockaddr *)&clnt_adr, clnt_adr_sz);
 }
