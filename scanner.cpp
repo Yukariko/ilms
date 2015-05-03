@@ -22,7 +22,7 @@ Scanner::Scanner(char *buf, int len)
 {
 	this->buf = buf;
 	this->end = buf+len;
-	this->len = 0;
+	this->len = len;
 	cur = buf;
 }
 
