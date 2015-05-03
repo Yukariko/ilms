@@ -11,6 +11,8 @@ class Node
 public:
 	Node(std::string ip);
 	const char *getIp();
+	int length();
+
 
 private:
 	std::string ip;

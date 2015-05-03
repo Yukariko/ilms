@@ -24,6 +24,11 @@ const char *Node::getIp()
 	return ip.c_str();
 }
 
+int Node::length()
+{
+	return ip.length();
+}
+
 /*
  * Tree 클래스 맴버함수
  */
