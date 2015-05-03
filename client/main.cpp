@@ -10,9 +10,9 @@ int main()
 
 	int len;
 
-	ilms->req_data_add(1234LL,"210.117.184.166");
+	ilms.req_data_add(1234LL,"210.117.184.166");
 
-	len = ilms->req_data_search(1234LL, buf);
+	len = ilms.req_data_search(1234LL, buf);
 
 	if(len > 0)
 		std::cout << buf << std::endl;

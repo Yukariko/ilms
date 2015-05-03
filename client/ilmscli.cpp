@@ -32,19 +32,19 @@ void IlmsCli::setIp(std::string ip)
 
 void IlmsCli::req_data_add(long long data,std::string ip)
 {
-	char buf[256];
+	char header[256];
 	int len=0;
 
-	buf[len++] = REQ_DATA_ADD;
-	*(long long *)buf[len] = data;
+	header[len++] = REQ_DATA_ADD;
+	*(long long *)(header+len) = data;
 	len += 8;
 
-	buf[len] = ip.length() + 1;
-	strcpy(buf+len+1,ip.c_str());
+	header[len] = ip.length() + 1;
+	strcpy(header+len+1,ip.c_str());
 
-	len += buf[len] + 1;
+	len += header[len] + 1;
 
-	this->send(buf,len);
+	this->send(header,len);
 }
 
 int IlmsCli::req_data_search(long long data, char *buf)
@@ -54,7 +54,7 @@ int IlmsCli::req_data_search(long long data, char *buf)
 	
 	header[len++] = REQ_DATA_SEARCH;
 	
-	*(long long *)header[len] = data;
+	*(long long *)(header+len) = data;
 	len += 8;
 
 	this->send(header,len);
@@ -63,15 +63,15 @@ int IlmsCli::req_data_search(long long data, char *buf)
 
 void IlmsCli::req_data_delete(long long data)
 {
-	char buf[BUF_SIZE];
+	char header[BUF_SIZE];
 	int len=0;
 
-	buf[len++] = REQ_DATA_DELETE;
+	header[len++] = REQ_DATA_DELETE;
 
-	*(long long *)buf[len] = data;
+	*(long long *)(header+len) = data;
 	len += 8;
 
-	this->send(buf,len);
+	this->send(header,len);
 }
 
 void IlmsCli::send(const char *buf,int len)
