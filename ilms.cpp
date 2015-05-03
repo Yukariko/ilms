@@ -366,8 +366,8 @@ void Ilms::req_data_search(char *ip_org)
 	strcpy(pos + 1, ip_org);
 	pos += *pos + 1;
 
-	*pos = strlen(me->getIp()) + 1;
-	strcpy(pos + 1, me->getIp());
+	*pos = me->length() + 1;
+	strcpy(pos + 1, me->c_str());
 	pos += *pos + 1;
 
 	char &up_down = *pos;
@@ -429,20 +429,20 @@ void Ilms::req_data_delete(char *ip_org)
 	strcpy(pos + 1, ip_org);
 	pos += *pos + 1;
 
-	*pos = strlen(me->getIp()) + 1;
-	strcpy(pos + 1, me->getIp());
+	*pos = me->length() + 1;
+	strcpy(pos + 1, me->c_str());
 	pos += *pos + 1;
 
 	char &up_down = *pos;
 	pos++;
-
+	
 	sc.len = pos - sc.buf;
   
 
 	if(childFilter->lookup(data))
 	{
 		unsigned char count = child.size();
-		insert(data,8+ip_org_len, (char *)&count, 1);
+		insert(data,8+ip_len+1, (char *)&count, 1);
 
 		up_down = MARK_DOWN;
 

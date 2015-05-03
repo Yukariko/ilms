@@ -72,8 +72,3 @@ void IlmsCli::send(const char *buf,int len)
 
 	sendto(sock, buf, len, 0, (struct sockaddr *)&clnt_adr, clnt_adr_sz);
 }
-
-int IlmsCli::recieve(char *buf, int len)
-{
-	
-}
