@@ -18,7 +18,7 @@ IlmsCli::IlmsCli(std::string ip)
 	memset(&serv_adr, 0, sizeof(serv_adr));
 	serv_adr.sin_family = AF_INET;
 	serv_adr.sin_addr.s_addr = htonl(INADDR_ANY);
-	serv_adr.sin_port = htons(PORT);
+	serv_adr.sin_port = htons(MYPORT);
 
 	if(bind(sock, (struct sockaddr *)&serv_adr, sizeof(serv_adr)) == -1)
 		error_handling("bind() error");

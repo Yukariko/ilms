@@ -7,6 +7,7 @@
 #include <iostream>
 
 #define PORT 7979
+#define MYPORT 7980
 #define BUF_SIZE 256
 
 class IlmsCli 
