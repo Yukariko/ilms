@@ -14,7 +14,7 @@ Bloomfilter::Bloomfilter(long long size, int numHash,long long (**hash)(long lon
 	this->size = size;
 	this->numHash = numHash;
 
-	this->hash = new(long long (*[numHash])(long long);
+	this->hash = new(long long (*[numHash])(long long));
 
 	for(int i=0;i<numHash;i++)
 		this->hash[i] = hash[i];
@@ -31,6 +31,7 @@ Bloomfilter::Bloomfilter(long long size, int numHash,long long (**hash)(long lon
 Bloomfilter::~Bloomfilter()
 {
 	delete[] field;
+	delete[] hash;
 }
 
 /*
