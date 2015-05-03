@@ -353,7 +353,6 @@ void Ilms::req_data_search(char *ip_org)
 {
 	sc.buf[0] = CMD_DATA_SEARCH;
 	char *data;
-	char *ip;
 
 	if(!sc.next_value(data,8))
 		return;
@@ -374,8 +373,6 @@ void Ilms::req_data_search(char *ip_org)
 	pos++;
 
 	sc.len = pos - sc.buf;
-
-	char &up_down = *sc.get_cur();
 
 	if(myFilter->lookup(data))
 	{
