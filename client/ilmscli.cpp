@@ -85,12 +85,16 @@ void IlmsCli::send(const char *buf,int len)
 	clnt_adr.sin_port = htons(PORT);
  
 	sendto(sock, buf, len, 0, (struct sockaddr *)&clnt_adr, clnt_adr_sz);
+
+	std::cout << "Send OK!" << std::endl;
 }
 
 int IlmsCli::recieve(char *buf)
 {
 	struct sockaddr_in clnt_adr;
 	socklen_t clnt_adr_sz = sizeof(clnt_adr);
+
+	std::cout << "Recieve OK!" << std::endl;
 
 	return recvfrom(sock, buf, BUF_SIZE, 0,(struct sockaddr*)&clnt_adr, &clnt_adr_sz);
 }

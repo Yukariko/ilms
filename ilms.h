@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
+#include <iostream>
 
 #include <leveldb/db.h>
 #include <leveldb/write_batch.h>

@@ -105,6 +105,8 @@ void Ilms::start()
 		int len = recvfrom(sock, buf, BUF_SIZE, 0,
 					(struct sockaddr*)&clnt_adr, &clnt_adr_sz);
 
+		std::cout << "Recieve OK!" << std::endl;
+
 		if(len > 0)
 		{
 			sc = Scanner(buf, len);
@@ -145,6 +147,8 @@ void Ilms::send(const char *ip,const char *buf,int len)
 	clnt_adr.sin_port = htons(PORT);
 
 	sendto(sock, buf, len, 0, (struct sockaddr *)&clnt_adr, clnt_adr_sz);
+
+	std::cout << "Send OK!" << std::endl;
 }
 
 /*
