@@ -195,6 +195,8 @@ void Ilms::proc_data_add()
 
 	myFilter->insert(data);
 
+	DEBUG("BLOOMFILTER OK!");
+
 	insert(data,8,value,*(unsigned char *)(value-1));
 
 	DEBUG("DATA_INSERT OK!");
