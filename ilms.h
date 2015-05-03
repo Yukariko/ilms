@@ -36,9 +36,9 @@ public:
 	//process
 	void proc_bf_add();
 	void proc_data_add();
-	void proc_data_search();
+	void proc_data_search(char *ip);
 	void proc_data_search_fail();
-	void proc_data_delete();
+	void proc_data_delete(char *ip);
 
 	//request
 	void req_data_add();
