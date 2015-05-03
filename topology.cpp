@@ -50,7 +50,7 @@ Tree::Tree()
 
 	char buf[256];
 	
-	if(!fgets(buf,sizeof(buf),fp))
+	if(fscanf(fp,"%s",buf) != 1)
 	{
 		error_handling("fgets failed");
 	}
@@ -65,7 +65,7 @@ Tree::Tree()
 
 	for(int i=0;i<num;i++)
 	{
-		if(!fgets(buf,sizeof(buf),fp))
+		if(fscanf(fp,"%s",buf) != 1)
 		{
 			error_handling("fgets failed");
 		}
@@ -79,7 +79,7 @@ Tree::Tree()
 
 	for(int i=0;i<num;i++)
 	{
-		if(!fgets(buf,sizeof(buf),fp))
+		if(fscanf(fp,"%s",buf) != 1)
 		{
 			error_handling("fgets failed");
 		}
