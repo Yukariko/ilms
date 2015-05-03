@@ -13,7 +13,11 @@ Bloomfilter::Bloomfilter(long long size, int numHash,long long (**hash)(long lon
 {
 	this->size = size;
 	this->numHash = numHash;
-	this->hash = hash;
+
+	this->hash = new(long long (*[numHash])(long long);
+
+	for(int i=0;i<numHash;i++)
+		this->hash[i] = hash[i];
 
 	field = new unsigned char[size/8+1];
 	memset(field,0,size/8+1);
