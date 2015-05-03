@@ -1,6 +1,9 @@
 #ifndef ILMSCLI_H
 #define ILMSCLI_H
 
+#include <unistd.h>
+#include <arpa/inet.h>
+#include <sys/socket.h>
 #include <iostream>
 
 #define PORT 7979
