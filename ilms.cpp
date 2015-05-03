@@ -134,6 +134,8 @@ void Ilms::start()
 
 void Ilms::send(const char *ip,const char *buf,int len)
 {
+	if(strcpy(ip,"0")==0)
+		return;
 	struct sockaddr_in clnt_adr;
 	socklen_t clnt_adr_sz = sizeof(clnt_adr);
 
