@@ -1,5 +1,6 @@
 #include <iostream>
 #include <cstdio>
+#include <cstring>
 
 #include "ilmscli.h"
 
@@ -11,7 +12,11 @@ int main()
 	{
 		char value[BUF_SIZE];
 
-		scanf("%s",value);
+		if(scanf("%s",value) != 1)
+		{
+			std::cout << "ERROR" << std::endl;
+			exit(1);
+		}
 
 		if(strcmp(cmd, "IP") == 0)
 		{
@@ -21,7 +26,11 @@ int main()
 		else if(strcmp(cmd, "SET") == 0)
 		{
 			long long data = *(long long *)value;
-			scanf("%s",value);
+			if(scanf("%s",value) != 1)
+			{
+				std::cout << "ERROR" << std::endl;
+				exit(1);
+			}
 			ilms.req_data_add(data, value);
 		}
 
@@ -38,7 +47,7 @@ int main()
 		else if(strcmp(cmd, "DELETE") == 0)
 		{
 			long long data = *(long long *)value;
-			ilms.req_data_delete;
+			ilms.req_data_delete(data);
 		}
 
 		else if(strcmp(cmd, "EXIT") == 0)
