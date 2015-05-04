@@ -351,12 +351,21 @@ void Ilms::proc_data_delete(char *ip)
 	}
 }
 
+/*
+ * 클라이언트로 부터의 데이터 추가 요청
+ * 사실상 기존 프로토콜과 동일함
+ */
 
 void Ilms::req_data_add()
 {
 	sc.buf[0] = CMD_DATA_ADD;
 	proc_data_add();
 }
+
+/*
+ * 클라이언트로 부터의 데이터 검색 요청
+ * 클라이언트는 자식이 아니므로 자식관련 처리과정이 생략됨
+ */
 
 void Ilms::req_data_search(char *ip_org)
 {
@@ -407,6 +416,11 @@ void Ilms::req_data_search(char *ip_org)
 		this->send(parent->getIp(), sc.buf, sc.len);
 	}
 }
+
+/*
+ * 클라이언트로 부터의 데이터 삭제 요청
+ * 클라이언트는 자식이 아니므로 자식관련 처리과정이 생략됨
+ */
 
 void Ilms::req_data_delete(char *ip_org)
 {

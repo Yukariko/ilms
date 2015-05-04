@@ -17,12 +17,17 @@ Node::Node(std::string ip)
 
 /*
  * ip를 반환하는 함수
+ * 데이터 복사 오버헤드를 줄이기 위해 내부 배열을 포인터로 전달
  */
 
 const char *Node::getIp()
 {
 	return ip.c_str();
 }
+
+/*
+ * 길이를 반환하는 함수
+ */
 
 int Node::length()
 {

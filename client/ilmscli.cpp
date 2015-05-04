@@ -7,6 +7,11 @@
 #define REQ_DATA_DELETE						0x22
 
 
+/*
+ * Ilms 클라이언트 생성자
+ * 요청을 전달할 노드의 ip를 설정하고 자신의 소켓 초기화
+ */
+
 IlmsCli::IlmsCli(std::string ip)
 {
 	this->ip = ip;
@@ -25,10 +30,18 @@ IlmsCli::IlmsCli(std::string ip)
 
 }
 
+/*
+ * ip설정. 다른노드로 이동할 때 쓰임
+ */
+
 void IlmsCli::setIp(std::string ip)
 {
 	this->ip = ip;
 }
+
+/*
+ * 데이터 추가 요청
+ */
 
 void IlmsCli::req_data_add(long long data,std::string ip)
 {
@@ -47,6 +60,11 @@ void IlmsCli::req_data_add(long long data,std::string ip)
 	this->send(header,len);
 }
 
+/*
+ * 데이터 검색 요청
+ * 검색 결과를 받을때까지 기다림 
+ */
+
 int IlmsCli::req_data_search(long long data, char *buf)
 {
 	char header[BUF_SIZE];
@@ -61,6 +79,10 @@ int IlmsCli::req_data_search(long long data, char *buf)
 	return this->recieve(buf);
 }
 
+/*
+ * 데이터 삭제 요청
+ */
+
 void IlmsCli::req_data_delete(long long data)
 {
 	char header[BUF_SIZE];
@@ -73,6 +95,10 @@ void IlmsCli::req_data_delete(long long data)
 
 	this->send(header,len);
 }
+
+/*
+ * 패킷 전송 함수
+ */
 
 void IlmsCli::send(const char *buf,int len)
 {
@@ -89,6 +115,10 @@ void IlmsCli::send(const char *buf,int len)
 	std::cout << "Send OK!" << std::endl;
 }
 
+/*
+ * 패킷을 받아오는 함수
+ */
+
 int IlmsCli::recieve(char *buf)
 {
 	struct sockaddr_in clnt_adr;
@@ -98,6 +128,10 @@ int IlmsCli::recieve(char *buf)
 
 	return recvfrom(sock, buf, BUF_SIZE, 0,(struct sockaddr*)&clnt_adr, &clnt_adr_sz);
 }
+
+/*
+ * 에러 처리 함수
+ */
 
 void IlmsCli::error_handling(const char *message)
 {
