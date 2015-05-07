@@ -95,8 +95,6 @@ Ilms::Ilms()
 Ilms::~Ilms()
 {
 	delete myFilter;
-	delete childFilter;
-
 	close(sock);
 }
 

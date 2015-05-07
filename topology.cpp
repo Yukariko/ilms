@@ -1,6 +1,6 @@
 #include <cstdio>
 #include <cstdlib>
-#include <sys/socket.h>
+#include <arpa/inet.h>
 
 #include "topology.h"
 
