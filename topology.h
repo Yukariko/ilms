@@ -10,12 +10,13 @@ class Node
 {
 public:
 	Node(std::string ip);
-	const char *getIp();
+	const char *get_ip();
 	int length();
-
+	int get_ip_num();
 
 private:
 	std::string ip;
+	int ip_num;
 };
 
 class Tree

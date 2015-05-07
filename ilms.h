@@ -25,7 +25,7 @@ public:
 	~Ilms();
 
 	void start();
-	void send(const char *ip,const char *buf,int len);
+	void send(int ip_num,const char *buf,int len);
 
 	//data
 	void insert(char *key,int klen, char *val,int vlen);
@@ -34,16 +34,16 @@ public:
 
 
 	//process
-	void proc_bf_add();
+	void proc_bf_add(int ip_num);
 	void proc_data_add();
-	void proc_data_search(char *ip);
+	void proc_data_search(int ip_num);
 	void proc_data_search_fail();
-	void proc_data_delete(char *ip);
+	void proc_data_delete(int ip_num);
 
 	//request
 	void req_data_add();
-	void req_data_search(char *ip_org);
-	void req_data_delete(char *ip_org);
+	void req_data_search(int ip_num);
+	void req_data_delete(int ip_num);
 
 private:
 
@@ -52,7 +52,7 @@ private:
 
 
 	Bloomfilter *myFilter;
-	Bloomfilter *childFilter;
+	std::vector<Bloomfilter> childFilter;
 
 	Scanner sc;
 

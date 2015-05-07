@@ -1,6 +1,9 @@
 #include <cstdio>
 #include <cstdlib>
+#include <sys/socket.h>
+
 #include "topology.h"
+
 
 /* 
  * Node 클래스 맴버함수
@@ -13,6 +16,7 @@
 Node::Node(std::string ip)
 {
 	this->ip = ip;
+	ip_num = inet_addr(ip.c_str());
 }
 
 /*
@@ -20,7 +24,7 @@ Node::Node(std::string ip)
  * 데이터 복사 오버헤드를 줄이기 위해 내부 배열을 포인터로 전달
  */
 
-const char *Node::getIp()
+const char *Node::get_ip()
 {
 	return ip.c_str();
 }
@@ -32,6 +36,16 @@ const char *Node::getIp()
 int Node::length()
 {
 	return ip.length();
+}
+
+/*
+ * ip를 int형으로 바꾼 결과를 리턴하는 함수
+ * 비교를 더 빠르게 하기 위함
+ */
+
+int Node::get_ip_num()
+{
+	return ip_num;
 }
 
 /*
