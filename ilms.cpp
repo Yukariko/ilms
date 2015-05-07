@@ -63,9 +63,12 @@ Ilms::Ilms()
 	
 	myFilter = new Bloomfilter(defaultSize, 11, hash);
 
-
-	for(unsigned int i = 0; i < child.size(); i++)
-			childFilter.push_back(Bloomfilter(defaultSize, 11, hash));
+	if(child.size())
+	{
+		childFilter = new Bloomfilter*[child.size()];
+		for(unsigned int i=0; i < child.size(); i++)
+			childFilter[i] = new Bloomfilter(defaultSize, 11, hash);
+	}
 	
 	// socket init
 	sock = socket(PF_INET, SOCK_DGRAM, 0);
@@ -95,6 +98,7 @@ Ilms::Ilms()
 Ilms::~Ilms()
 {
 	delete myFilter;
+	delete[] childFilter;
 	close(sock);
 }
 
@@ -182,7 +186,7 @@ void Ilms::proc_bf_add(int ip_num)
 	{
 		if(ip_num == child[i].get_ip_num())
 		{
-			childFilter[i].insert(data);
+			childFilter[i]->insert(data);
 			break;
 		}
 	}
@@ -257,7 +261,7 @@ void Ilms::proc_data_search(int ip_num)
 		up_down = MARK_DOWN;
 		for(unsigned int i=0;i<child.size();i++)
 		{
-			if(ip_num != child[i].get_ip_num() && childFilter[i].lookup(data))
+			if(ip_num != child[i].get_ip_num() && childFilter[i]->lookup(data))
 			{
 				find = true;
 				this->send(child[i].get_ip_num(), sc.buf, sc.len);
@@ -278,7 +282,7 @@ void Ilms::proc_data_search(int ip_num)
 	{
 		for(unsigned int i=0;i<child.size();i++)
 		{
-			if(childFilter[i].lookup(data))
+			if(childFilter[i]->lookup(data))
 			{
 				find = true;
 				this->send(child[i].get_ip_num(), sc.buf, sc.len);
@@ -360,7 +364,7 @@ void Ilms::proc_data_delete(int ip_num)
 		up_down = MARK_DOWN;
 		for(unsigned int i=0;i<child.size();i++)
 		{
-			if(ip_num != child[i].get_ip_num() && childFilter[i].lookup(data))
+			if(ip_num != child[i].get_ip_num() && childFilter[i]->lookup(data))
 			{
 				find = true;
 				this->send(child[i].get_ip_num(), sc.buf, sc.len);
@@ -381,7 +385,7 @@ void Ilms::proc_data_delete(int ip_num)
 	{
 		for(unsigned int i=0;i<child.size();i++)
 		{
-			if(childFilter[i].lookup(data))
+			if(childFilter[i]->lookup(data))
 			{
 				find = true;
 				this->send(child[i].get_ip_num(), sc.buf, sc.len);
@@ -453,7 +457,7 @@ void Ilms::req_data_search(int ip_num)
 
 	for(unsigned int i=0;i<child.size();i++)
 	{
-		if(childFilter[i].lookup(data))
+		if(childFilter[i]->lookup(data))
 		{
 			find = true;
 			this->send(child[i].get_ip_num(), sc.buf, sc.len);
@@ -503,7 +507,7 @@ void Ilms::req_data_delete(int ip_num)
 
 	for(unsigned int i=0;i<child.size();i++)
 	{
-		if(childFilter[i].lookup(data))
+		if(childFilter[i]->lookup(data))
 		{
 			find = true;
 			this->send(child[i].get_ip_num(), sc.buf, sc.len);

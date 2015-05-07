@@ -52,7 +52,7 @@ private:
 
 
 	Bloomfilter *myFilter;
-	std::vector<Bloomfilter> childFilter;
+	Bloomfilter **childFilter;
 
 	Scanner sc;
 
