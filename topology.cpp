@@ -124,7 +124,7 @@ Tree::~Tree()
  * 부모 노드는 하나라고 가정하기 때문에 Node 클래스 리턴
  */
 
-Node Tree::getParent()
+Node Tree::get_parent()
 {
 	return *parent;
 }
@@ -134,7 +134,7 @@ Node Tree::getParent()
  * 자식은 여러개 있을 수 있기 때문에 벡터로 리턴
  */
 
-std::vector<Node> Tree::getChild()
+std::vector<Node> Tree::get_child()
 {
 	return child;
 }
@@ -144,7 +144,7 @@ std::vector<Node> Tree::getChild()
  * 피어노드는 여러개 있을 수 있어 벡터로 리턴
  */
 
-std::vector<Node> Tree::getPeer()
+std::vector<Node> Tree::get_peer()
 {
 	return peer;
 }

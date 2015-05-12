@@ -24,18 +24,16 @@ class Tree
 public:
 	Tree();
 	~Tree();
-	Node getParent();
-	std::vector<Node> getChild();
-	std::vector<Node> getPeer();
+	Node get_parent();
+	std::vector<Node> get_child();
+	std::vector<Node> get_peer();
 
 protected:
 	void error_handling(const char *message);
 
-	// is parent Node always one?
 	Node *parent;
 	std::vector<Node> child;
 	std::vector<Node> peer;
-
 };
 
 #endif

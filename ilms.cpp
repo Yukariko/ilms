@@ -14,12 +14,11 @@
 #define REQ_DATA_SEARCH						0x21
 #define REQ_DATA_DELETE						0x22
 
-#define MARK_SEARCH_FAIL					0x8000000000000000
 #define MARK_UP										0x01
 #define MARK_DOWN									0x00
 
 
-#define MODE 1
+//#define MODE 1
 #ifdef MODE
 #define DEBUG(s) (std::cout << s << std::endl)
 #endif
@@ -254,7 +253,6 @@ void Ilms::proc_data_search(int ip_num)
 	}
 
 	unsigned char count = 0;
-	bool find = false;
 
 	if(up_down == MARK_UP)
 	{
@@ -263,12 +261,11 @@ void Ilms::proc_data_search(int ip_num)
 		{
 			if(ip_num != child[i].get_ip_num() && childFilter[i]->lookup(data))
 			{
-				find = true;
 				this->send(child[i].get_ip_num(), sc.buf, sc.len);
 				count++;
 			}
 		}
-		if(find)
+		if(count)
 		{
 			insert(data,12, (char *)&count, 1);
 		}
@@ -284,12 +281,11 @@ void Ilms::proc_data_search(int ip_num)
 		{
 			if(childFilter[i]->lookup(data))
 			{
-				find = true;
 				this->send(child[i].get_ip_num(), sc.buf, sc.len);
 				count++;
 			}
 		}
-		if(find)
+		if(count)
 		{
 			insert(data,12, (char *)&count, 1);
 		}
@@ -340,12 +336,8 @@ void Ilms::proc_data_search_fail()
 void Ilms::proc_data_delete(int ip_num)
 {
 	char *data;
-	int ip_org_num;
 
 	if(!sc.next_value(data,8))
-		return;
-
-	if(!sc.next_value(ip_org_num))
 		return;
 
 	char &up_down = *sc.get_cur();
@@ -357,7 +349,6 @@ void Ilms::proc_data_delete(int ip_num)
 	}
 
 	unsigned char count = 0;
-	bool find = false;
 
 	if(up_down == MARK_UP)
 	{
@@ -366,12 +357,11 @@ void Ilms::proc_data_delete(int ip_num)
 		{
 			if(ip_num != child[i].get_ip_num() && childFilter[i]->lookup(data))
 			{
-				find = true;
 				this->send(child[i].get_ip_num(), sc.buf, sc.len);
 				count++;
 			}
 		}
-		if(find)
+		if(count)
 		{
 			insert(data,12, (char *)&count, 1);
 		}
@@ -387,12 +377,11 @@ void Ilms::proc_data_delete(int ip_num)
 		{
 			if(childFilter[i]->lookup(data))
 			{
-				find = true;
 				this->send(child[i].get_ip_num(), sc.buf, sc.len);
 				count++;
 			}
 		}
-		if(find)
+		if(count)
 		{
 			insert(data,12, (char *)&count, 1);
 		}
@@ -451,7 +440,6 @@ void Ilms::req_data_search(int ip_num)
 	}
 
 	unsigned char count = 0;
-	bool find = false;
 
 	up_down = MARK_DOWN;
 
@@ -459,12 +447,11 @@ void Ilms::req_data_search(int ip_num)
 	{
 		if(childFilter[i]->lookup(data))
 		{
-			find = true;
 			this->send(child[i].get_ip_num(), sc.buf, sc.len);
 			count++;
 		}
 	}
-	if(find)
+	if(count)
 	{
 		insert(data,12, (char *)&count, 1);
 	}
@@ -501,7 +488,6 @@ void Ilms::req_data_delete(int ip_num)
   
 
 	unsigned char count = 0;
-	bool find = false;
 
 	up_down = MARK_DOWN;
 
@@ -509,12 +495,11 @@ void Ilms::req_data_delete(int ip_num)
 	{
 		if(childFilter[i]->lookup(data))
 		{
-			find = true;
 			this->send(child[i].get_ip_num(), sc.buf, sc.len);
 			count++;
 		}
 	}
-	if(find)
+	if(count)
 	{
 		insert(data,12, (char *)&count, 1);
 	}

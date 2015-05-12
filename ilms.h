@@ -28,9 +28,9 @@ public:
 	void send(int ip_num,const char *buf,int len);
 
 	//data
-	void insert(char *key,int klen, char *val,int vlen);
+	void insert(char *key,int klen,char *val,int vlen);
 	bool search(char *key,int klen,std::string &val);
-	bool remove(char *key, int klen);
+	bool remove(char *key,int klen);
 
 
 	//process
