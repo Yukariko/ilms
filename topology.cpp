@@ -122,7 +122,7 @@ Tree::Tree()
 		{
 			error_handling("fgets failed");
 		}
-		down_peer.push_back(Node(buf));
+		up_peer.push_back(Node(buf));
 	}
 
 	fclose(fp);
