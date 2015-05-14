@@ -16,6 +16,8 @@
 #define BUF_SIZE 256
 #define PORT 7979
 
+#define DATA_SIZE 8
+
 #define DB_PATH "./db"
 
 class Ilms : public Tree
@@ -25,7 +27,10 @@ public:
 	~Ilms();
 
 	void start();
-	void send(int ip_num,const char *buf,int len);
+	void send(unsigned long ip_num,const char *buf,int len);
+	int send_child(char *data);
+	int send_child(unsigned long ip_num, char *data);
+	int send_peer(char *data);
 
 	//data
 	void insert(char *key,int klen,char *val,int vlen);
@@ -34,16 +39,21 @@ public:
 
 
 	//process
-	void proc_bf_add(int ip_num);
+	void proc_bf_add(unsigned long ip_num);
 	void proc_data_add();
-	void proc_data_search(int ip_num);
+	void proc_data_search(unsigned long ip_num);
 	void proc_data_search_fail();
-	void proc_data_delete(int ip_num);
+	void proc_data_delete(unsigned long ip_num);
 
 	//request
 	void req_data_add();
-	void req_data_search(int ip_num);
-	void req_data_delete(int ip_num);
+	void req_data_search(unsigned long ip_num);
+	void req_data_delete(unsigned long ip_num);
+
+	//peer
+	void peer_bf_add(unsigned long ip_num);
+	void peer_data_search(unsigned long ip_num);
+	void peer_data_delete(unsigned long ip_num);
 
 private:
 
@@ -51,8 +61,9 @@ private:
 	leveldb::Options options;
 
 
-	Bloomfilter *myFilter;
-	Bloomfilter **childFilter;
+	Bloomfilter *my_filter;
+	Bloomfilter **child_filter;
+	Bloomfilter **pear_filter;
 
 	Scanner sc;
 

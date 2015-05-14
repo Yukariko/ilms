@@ -43,7 +43,7 @@ int Node::length()
  * 비교를 더 빠르게 하기 위함
  */
 
-int Node::get_ip_num()
+unsigned long Node::get_ip_num()
 {
 	return ip_num;
 }
@@ -69,6 +69,7 @@ Tree::Tree()
 
 	char buf[256];
 	
+	// 부모 노드
 	if(fscanf(fp,"%s",buf) != 1)
 	{
 		error_handling("fgets failed");
@@ -77,6 +78,8 @@ Tree::Tree()
 	parent = new Node(buf);
 
 	int num;
+
+	// 자식 노드
 	if(fscanf(fp,"%d ",&num) != 1)
 	{
 		error_handling("fscanf failed");
@@ -91,6 +94,7 @@ Tree::Tree()
 		child.push_back(Node(buf));
 	}
 
+	// down peer 노드
 	if(fscanf(fp,"%d ",&num) != 1)
 	{
 		error_handling("fscanf failed");
@@ -102,7 +106,23 @@ Tree::Tree()
 		{
 			error_handling("fgets failed");
 		}
-		peer.push_back(Node(buf));
+		down_peer.push_back(Node(buf));
+	}
+
+
+	// up peer 노드
+	if(fscanf(fp,"%d ",&num) != 1)
+	{
+		error_handling("fscanf failed");
+	}
+
+	for(int i=0;i<num;i++)
+	{
+		if(fscanf(fp,"%s",buf) != 1)
+		{
+			error_handling("fgets failed");
+		}
+		down_peer.push_back(Node(buf));
 	}
 
 	fclose(fp);
@@ -146,7 +166,7 @@ std::vector<Node> Tree::get_child()
 
 std::vector<Node> Tree::get_peer()
 {
-	return peer;
+	return down_peer;
 }
 
 

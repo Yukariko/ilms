@@ -14,6 +14,12 @@
 #define REQ_DATA_SEARCH						0x21
 #define REQ_DATA_DELETE						0x22
 
+#define PEER_BF_ADD								0x30
+#define PEER_DATA_SEARCH					0x31
+#define PEER_DATA_SEARCH_FAIL			0x32
+#define PEER_DATA_DELETE					0x33
+
+
 #define MARK_UP										0x01
 #define MARK_DOWN									0x00
 
@@ -60,13 +66,20 @@ Ilms::Ilms()
 	// bloomfilter init
 	long long (*hash[11])(long long) = {test,test2,test3,test4,test5,test6,test7,test8,test9,test10,test11};
 	
-	myFilter = new Bloomfilter(defaultSize, 11, hash);
+	my_filter = new Bloomfilter(defaultSize, 11, hash);
 
 	if(child.size())
 	{
-		childFilter = new Bloomfilter*[child.size()];
+		child_filter = new Bloomfilter*[child.size()];
 		for(unsigned int i=0; i < child.size(); i++)
-			childFilter[i] = new Bloomfilter(defaultSize, 11, hash);
+			child_filter[i] = new Bloomfilter(defaultSize, 11, hash);
+	}
+
+	if(down_peer.size())
+	{
+		peer_filter = new Bloomfilter*[down_peer.size()];
+		for(unsigned int i=0; i < down_peer.size(); i++)
+			peer_filter[i] = new Bloomfilter(defaultSize, 11, hash);	
 	}
 	
 	// socket init
@@ -96,8 +109,8 @@ Ilms::Ilms()
 
 Ilms::~Ilms()
 {
-	delete myFilter;
-	delete[] childFilter;
+	delete my_filter;
+	delete[] child_filter;
 	close(sock);
 }
 
@@ -131,7 +144,7 @@ void Ilms::start()
 
 			DEBUG("Protocol OK!");
 
-			int ip_num = inet_addr(inet_ntoa(clnt_adr.sin_addr));
+			unsigned long ip_num = clnt_adr.sin_addr;
 
 			switch(cmd)
 			{
@@ -144,6 +157,10 @@ void Ilms::start()
 			case REQ_DATA_ADD: req_data_add(); break;
 			case REQ_DATA_SEARCH: req_data_search(ip_num); break;
 			case REQ_DATA_DELETE: req_data_delete(ip_num); break;
+
+			case PEER_BF_ADD: peer_bf_add(ip_num); break;
+			case PEER_DATA_SEARCH: peer_data_search(ip_num); break;
+			case PEER_DATA_DELETE: peer_data_delete(ip_num); break;
 			}
 		}
 	}
@@ -153,7 +170,7 @@ void Ilms::start()
  * 버퍼 전송
  */
 
-void Ilms::send(int ip_num,const char *buf,int len)
+void Ilms::send(unsigned long ip_num,const char *buf,int len)
 {
 	if(ip_num==0)
 		return;
@@ -170,27 +187,71 @@ void Ilms::send(int ip_num,const char *buf,int len)
 	DEBUG("Send OK!");
 }
 
+int Ilms::send_child(char *data)
+{
+	int ret = 0;
+	for(unsigned int i=0; i < child.size(); i++)
+	{
+		if(child_filter[i]->lookup(data))
+		{
+			this->send(child[i].get_ip_num(), sc.buf, sc.len);
+			ret++;
+		}
+	}
+	return ret;
+}
+
+int Ilms::send_child(unsigned long ip_num, char *data)
+{
+	int ret = 0;
+	for(unsigned int i=0; i < child.size(); i++)
+	{
+		if(ip_num != child[i].get_ip_num() && child_filter[i]->lookup(data))
+		{
+			this->send(child[i].get_ip_num(), sc.buf, sc.len);
+			ret++;
+		}
+	}
+	return ret;
+}
+
+int Ilms::send_peer(char *data)
+{
+	int ret = 0;
+	for(unsigned int i=0; i < down_peer.size(); i++)
+	{
+		if(peer_filter[i]->lookup(data))
+		{
+			this->send(down_peer[i].get_ip_num(), sc.buf, sc.len);
+			ret++;
+		}
+	}
+	return ret;
+}
+
 /*
  * 블룸필터 데이터 추가
  * 부모노드에도 추가해야 하므로 버퍼그대로 전송
  */
 
-void Ilms::proc_bf_add(int ip_num)
+void Ilms::proc_bf_add(unsigned long ip_num)
 {
 	char *data;
-	if(!sc.next_value(data,8))
+	if(!sc.next_value(data,DATA_SIZE))
 		return;
 
+	bool find = false;
 	for(unsigned int i=0; i < child.size(); i++)
 	{
 		if(ip_num == child[i].get_ip_num())
 		{
-			childFilter[i]->insert(data);
+			child_filter[i]->insert(data);
+			find = true;
 			break;
 		}
 	}
-
-	this->send(parent->get_ip_num(), sc.buf, sc.len);
+	if(find)
+		this->send(parent->get_ip_num(), sc.buf, sc.len);
 }
 
 /*
@@ -202,24 +263,21 @@ void Ilms::proc_data_add()
 {
 	char *data;
 	char *value;
-	if(!sc.next_value(data,8))
+	if(!sc.next_value(data,DATA_SIZE))
 		return;
 
 	if(!sc.next_value(value))
 		return;
 
-	DEBUG("PROC_DATA_ADD OK!");
-
-	myFilter->insert(data);
-
-	DEBUG("BLOOMFILTER OK!");
-
-	insert(data,8,value,*(unsigned char *)(value-1));
-
-	DEBUG("DATA_INSERT OK!");
+	my_filter->insert(data);
+	insert(data,DATA_SIZE,value,*(unsigned char *)(value-1));
 
 	sc.buf[0] = CMD_BF_ADD;
 	this->send(parent->get_ip_num(), sc.buf, sc.len);
+
+	sc.buf[0] = PEER_BF_ADD;
+	for(unsigned int i=0; i < up_peer.size(); i++)
+		this->send(up_peer[i].get_ip_num(), sc.buf, sc.len);
 }
 
 /*
@@ -229,75 +287,75 @@ void Ilms::proc_data_add()
  * 3) 자식필터에 데이터가 없다면 부모노드로 올라감. 부모노드에서 내려온 상태라면 부모에 검색 실패 전송 
  */
 
-void Ilms::proc_data_search(int ip_num)
+void Ilms::proc_data_search(unsigned long ip_num)
 {
 	char *data;
-	int ip_org_num;
+	unsigned long ip_org_num;
 
-	if(!sc.next_value(data,8))
+	if(!sc.next_value(data,DATA_SIZE))
 		return;
 
 	if(!sc.next_value(ip_org_num))
 		return;
 
-	char &up_down = *sc.get_cur();
-
-	if(myFilter->lookup(data))
+	if(my_filter->lookup(data))
 	{
 		std::string ret;
-		if(search(data,8,ret))
+		if(search(data,DATA_SIZE,ret))
 		{
 			this->send(ip_org_num, ret.c_str(), ret.length());
 			return;
 		}
 	}
 
-	unsigned char count = 0;
+	char *up_down;
+	if(!sc.next_value(up_down,1))
+		return;
 
-	if(up_down == MARK_UP)
+	char *p_depth;
+	if(!sc.next_value(p_depth,4))
+		return;
+
+	unsigned long depth = ntohl(*(unsigned long *)p_depth);
+
+	int count = 0;
+
+	*(unsigned long *)p_depth = htonl(depth+1);
+
+	if(*up_down == MARK_UP)
 	{
-		up_down = MARK_DOWN;
-		for(unsigned int i=0;i<child.size();i++)
-		{
-			if(ip_num != child[i].get_ip_num() && childFilter[i]->lookup(data))
-			{
-				this->send(child[i].get_ip_num(), sc.buf, sc.len);
-				count++;
-			}
-		}
-		if(count)
-		{
-			insert(data,12, (char *)&count, 1);
-		}
-		else
-		{
-			up_down = MARK_UP;
-			this->send(parent->get_ip_num(), sc.buf, sc.len);
-		}
+		*up_down = MARK_DOWN;
+		count += send_child(ip_num,data);
 	}
 	else
 	{
-		for(unsigned int i=0;i<child.size();i++)
+		count += send_child(data);
+	}
+
+	sc.buf[0] = PEER_DATA_SEARCH;
+	count += send_peer(data);
+
+	if(count)
+	{
+		insert(data,DATA_SIZE+4, (char *)&count, sizeof(count));
+	}
+	else
+	{
+		*(unsigned long *)p_depth = htonl(depth);
+
+		*up_down = MARK_UP;
+
+		if(depth > 0)
 		{
-			if(childFilter[i]->lookup(data))
-			{
-				this->send(child[i].get_ip_num(), sc.buf, sc.len);
-				count++;
-			}
-		}
-		if(count)
-		{
-			insert(data,12, (char *)&count, 1);
+			sc.buf[sc.len++] = CMD_DATA_SEARCH;
+			sc.buf[0] = CMD_DATA_SEARCH_FAIL;
 		}
 		else
-		{
-			sc.buf[0] = CMD_DATA_SEARCH_FAIL;
-			sc.buf[sc.len++] = CMD_DATA_SEARCH_FAIL;
-			up_down = MARK_UP;
-			this->send(parent->get_ip_num(), sc.buf, sc.len);
-		}
+			sc.buf[0] = CMD_DATA_SEARCH;
+		this->send(parent->get_ip_num(), sc.buf, sc.len);
 	}
 }
+
 
 /*
  * 데이터 검색 실패. 노드에 false positive가 존재하는 상황
@@ -307,25 +365,29 @@ void Ilms::proc_data_search(int ip_num)
 void Ilms::proc_data_search_fail()
 {
 	char *data = sc.get_cur();
+	char *p_depth = sc.get_cur() + DATA_SIZE + 4 + 1;
+	unsigned long depth = ntohl(*(unsigned long *)p_depth);
 
 	std::string ret;
 
-	if(!search(data,12,ret))
+	if(!search(data,DATA_SIZE+4,ret))
 		return;
 
-	unsigned char count = *(unsigned char *)ret.c_str();
+	int count = *(int *)ret.c_str();
 
 	if(--count == 0)
 	{
-		remove(data,12);
+		remove(data,DATA_SIZE+4);
+		
+		*(unsigned long *)p_depth = htonl(depth-1);
 
-		sc.buf[0] = sc.buf[--sc.len];
-
+		if(depth == 1)
+			sc.buf[0] = sc.buf[--sc.len];
 		this->send(parent->get_ip_num(), sc.buf, sc.len);
 		return;
 	}
 
-	insert(data,12, (char *)&count, 1);
+	insert(data,DATA_SIZE+4, (char *)&count, sizeof(count));
 }
 
 /*
@@ -333,65 +395,68 @@ void Ilms::proc_data_search_fail()
  * 데이터 검색 매커니즘에서 검색후 알림 대신 삭제
  */
 
-void Ilms::proc_data_delete(int ip_num)
+void Ilms::proc_data_delete(unsigned long ip_num)
 {
 	char *data;
+	unsigned long ip_org_num;
 
-	if(!sc.next_value(data,8))
+	if(!sc.next_value(data,DATA_SIZE))
 		return;
 
-	char &up_down = *sc.get_cur();
+	if(!sc.next_value(ip_org_num))
+		return;
 
-	if(myFilter->lookup(data))
+	if(my_filter->lookup(data))
 	{
-		if(remove(data,8))
+		if(remove(data,DATA_SIZE))
 			return;
 	}
 
-	unsigned char count = 0;
+	char *up_down;
+	if(!sc.next_value(up_down,1))
+		return;
 
-	if(up_down == MARK_UP)
+	char *p_depth;
+	if(!sc.next_value(p_depth,4))
+		return;
+
+	unsigned long depth = ntohl(*(unsigned long *)p_depth);
+
+	int count = 0;
+
+	*(unsigned long *)p_depth = htonl(depth+1);
+
+	if(*up_down == MARK_UP)
 	{
-		up_down = MARK_DOWN;
-		for(unsigned int i=0;i<child.size();i++)
-		{
-			if(ip_num != child[i].get_ip_num() && childFilter[i]->lookup(data))
-			{
-				this->send(child[i].get_ip_num(), sc.buf, sc.len);
-				count++;
-			}
-		}
-		if(count)
-		{
-			insert(data,12, (char *)&count, 1);
-		}
-		else
-		{
-			up_down = MARK_UP;
-			this->send(parent->get_ip_num(), sc.buf, sc.len);
-		}
+		*up_down = MARK_DOWN;
+		count += send_child(ip_num,data);
 	}
 	else
 	{
-		for(unsigned int i=0;i<child.size();i++)
+		count += send_child(data);
+	}
+
+	sc.buf[0] = PEER_DATA_DELETE;
+	count += send_peer(data);
+
+	if(count)
+	{
+		insert(data,DATA_SIZE+4, (char *)&count, sizeof(count));
+	}
+	else
+	{
+		*(unsigned long *)p_depth = htonl(depth);
+
+		*up_down = MARK_UP;
+
+		if(depth > 0)
 		{
-			if(childFilter[i]->lookup(data))
-			{
-				this->send(child[i].get_ip_num(), sc.buf, sc.len);
-				count++;
-			}
-		}
-		if(count)
-		{
-			insert(data,12, (char *)&count, 1);
+			sc.buf[sc.len++] = CMD_DATA_DELETE;
+			sc.buf[0] = CMD_DATA_SEARCH_FAIL;
 		}
 		else
-		{
-			sc.buf[0] = CMD_DATA_SEARCH_FAIL;
-			sc.buf[sc.len++] = CMD_DATA_SEARCH_FAIL;
-			up_down = MARK_UP;
-			this->send(parent->get_ip_num(), sc.buf, sc.len);
-		}
+			sc.buf[0] = CMD_DATA_DELETE;
+		this->send(parent->get_ip_num(), sc.buf, sc.len);
 	}
 }
 
@@ -411,53 +476,57 @@ void Ilms::req_data_add()
  * 클라이언트는 자식이 아니므로 자식관련 처리과정이 생략됨
  */
 
-void Ilms::req_data_search(int ip_num)
+void Ilms::req_data_search(unsigned long ip_num)
 {
-	sc.buf[0] = CMD_DATA_SEARCH;
 	char *data;
 
-	if(!sc.next_value(data,8))
+	if(!sc.next_value(data,DATA_SIZE))
 		return;
 
 	char *pos = sc.get_cur();
 
-	*(int *)pos = ip_num;
+	*(unsigned long *)pos = ip_num;
 	pos += 4;
 
 	char &up_down = *pos;
 	pos++;
 
+	char *p_depth = pos;
+	pos += 4;
+
+	*(unsigned long *)p_depth = 0;
+
 	sc.len = pos - sc.buf;
 
-	if(myFilter->lookup(data))
+	if(my_filter->lookup(data))
 	{
 		std::string ret;
-		if(search(data,8,ret))
+		if(search(data,DATA_SIZE,ret))
 		{
 			this->send(ip_num, ret.c_str(), ret.length());
 			return;
 		}
 	}
 
-	unsigned char count = 0;
-
 	up_down = MARK_DOWN;
+	*(unsigned long *)p_depth = htonl(1);
 
-	for(unsigned int i=0;i<child.size();i++)
-	{
-		if(childFilter[i]->lookup(data))
-		{
-			this->send(child[i].get_ip_num(), sc.buf, sc.len);
-			count++;
-		}
-	}
+	int count = 0;
+
+	sc.buf[0] = PEER_DATA_SEARCH;
+	count += send_peer(data);
+
+	sc.buf[0] = CMD_DATA_SEARCH;
+	count += send_child(data);
+
 	if(count)
 	{
-		insert(data,12, (char *)&count, 1);
+		insert(data,DATA_SIZE+4, (char *)&count, sizeof(count));
 	}
 	else
 	{
 		up_down = MARK_UP;
+		*(unsigned long *)p_depth = 0;
 		this->send(parent->get_ip_num(), sc.buf, sc.len);
 	}
 }
@@ -467,47 +536,133 @@ void Ilms::req_data_search(int ip_num)
  * 클라이언트는 자식이 아니므로 자식관련 처리과정이 생략됨
  */
 
-void Ilms::req_data_delete(int ip_num)
+void Ilms::req_data_delete(unsigned long ip_num)
 {
-	sc.buf[0] = CMD_DATA_DELETE;
-
 	char *data;
 
-	if(!sc.next_value(data,8))
+	if(!sc.next_value(data,DATA_SIZE))
 		return;
 
 	char *pos = sc.get_cur();
 
-	*(int *)pos = ip_num;
+	*(unsigned long *)pos = ip_num;
 	pos += 4;
 
 	char &up_down = *pos;
 	pos++;
 
+	char *p_depth = pos;
+	pos += 4;
+
+	*(unsigned long *)p_depth = 0;
+
 	sc.len = pos - sc.buf;
-  
 
-	unsigned char count = 0;
-
-	up_down = MARK_DOWN;
-
-	for(unsigned int i=0;i<child.size();i++)
+	if(my_filter->lookup(data))
 	{
-		if(childFilter[i]->lookup(data))
+		std::string ret;
+		if(search(data,DATA_SIZE,ret))
 		{
-			this->send(child[i].get_ip_num(), sc.buf, sc.len);
-			count++;
+			this->send(ip_num, ret.c_str(), ret.length());
+			return;
 		}
 	}
+
+	up_down = MARK_DOWN;
+	*(unsigned long *)p_depth = htonl(1);
+
+	int count = 0;
+
+	sc.buf[0] = PEER_DATA_DELETE;
+	count += send_peer(data);
+
+	sc.buf[0] = CMD_DATA_DELETE;
+	count += send_child(data);
+
 	if(count)
 	{
-		insert(data,12, (char *)&count, 1);
+		insert(data,DATA_SIZE+4, (char *)&count, sizeof(count));
 	}
 	else
 	{
 		up_down = MARK_UP;
+		*(unsigned long *)p_depth = 0;
 		this->send(parent->get_ip_num(), sc.buf, sc.len);
 	}
+}
+
+void Ilms::peer_bf_add(unsigned long ip_num)
+{
+	char *data;
+	if(!sc.next_value(data,DATA_SIZE))
+		return;
+
+	for(unsigned int i=0; i < down_peer.size(); i++)
+	{
+		if(ip_num == down_peer[i].get_ip_num())
+		{
+			peer_filter[i]->insert(data);
+			break;
+		}
+	}
+}
+
+void Ilms::peer_data_search(unsigned long ip_num)
+{
+	char *data;
+	unsigned long ip_org_num;
+
+	if(!sc.next_value(data,DATA_SIZE))
+		return;
+
+	if(!sc.next_value(ip_org_num))
+		return;
+
+	if(my_filter->lookup(data))
+	{
+		std::string ret;
+		if(search(data,DATA_SIZE,ret))
+		{
+			this->send(ip_org_num, ret.c_str(), ret.length());
+			return;
+		}
+	}
+
+	char *up_down;
+	if(!sc.next_value(up_down,1))
+		return;
+
+	sc.buf[sc.len++] = CMD_DATA_SEARCH;
+	sc.buf[0] = CMD_DATA_SEARCH_FAIL;
+	*up_down = MARK_UP;
+	this->send(ip_num, sc.buf, sc.len);
+}
+
+void Ilms::peer_data_delete(unsigned long ip_num)
+{
+	char *data;
+	unsigned long ip_org_num;
+
+	if(!sc.next_value(data,DATA_SIZE))
+		return;
+
+	if(!sc.next_value(ip_org_num))
+		return;
+
+	if(my_filter->lookup(data))
+	{
+		if(remove(data,DATA_SIZE))
+			return;
+	}
+
+	char *up_down;
+	if(!sc.next_value(up_down,1))
+		return;
+
+	sc.buf[sc.len++] = CMD_DATA_DELETE;
+	sc.buf[0] = CMD_DATA_SEARCH_FAIL;
+	*up_down = MARK_UP;
+	this->send(ip_num, sc.buf, sc.len);
 }
 
 /*

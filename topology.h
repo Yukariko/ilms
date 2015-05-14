@@ -12,11 +12,11 @@ public:
 	Node(std::string ip);
 	const char *get_ip();
 	int length();
-	int get_ip_num();
+	unsigned long get_ip_num();
 
 private:
 	std::string ip;
-	int ip_num;
+	unsigned long ip_num;
 };
 
 class Tree
@@ -33,7 +33,8 @@ protected:
 
 	Node *parent;
 	std::vector<Node> child;
-	std::vector<Node> peer;
+	std::vector<Node> down_peer;
+	std::vector<Node> up_peer;
 };
 
 #endif

@@ -61,9 +61,23 @@ bool Scanner::next_value(int &val)
 {
 	if(isEnd(4)) return false;
 	val = *(int *)cur;
+	cur += sizeof(int);
+	return true;
+}
+
+/*
+ * 스캐너 변수 읽기
+ * 4바이트를 읽어 unsigned long 형 변수 반환
+ */
+
+bool Scanner::next_value(unsigned long &val)
+{
+	if(isEnd(4)) return false;
+	val = *(unsigned long *)cur;
 	cur += 4;
 	return true;
 }
+
 
 /*
  * 스캐너 변수 읽기
