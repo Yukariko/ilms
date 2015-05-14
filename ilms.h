@@ -63,7 +63,7 @@ private:
 
 	Bloomfilter *my_filter;
 	Bloomfilter **child_filter;
-	Bloomfilter **pear_filter;
+	Bloomfilter **peer_filter;
 
 	Scanner sc;
 

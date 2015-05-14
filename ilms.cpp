@@ -144,7 +144,7 @@ void Ilms::start()
 
 			DEBUG("Protocol OK!");
 
-			unsigned long ip_num = clnt_adr.sin_addr;
+			unsigned long ip_num = clnt_adr.sin_addr.s_addr;
 
 			switch(cmd)
 			{
