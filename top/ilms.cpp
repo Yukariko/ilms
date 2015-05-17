@@ -25,6 +25,7 @@
 
 #define TOP_BF_ADD								0x40
 #define TOP_DATA_SEARCH						0x41
+#define TOP_DATA_DELETE						0x42
 
 #define MARK_UP										0x01
 #define MARK_DOWN									0x00
@@ -182,6 +183,7 @@ void Ilms::start()
 
 			case TOP_BF_ADD: top_bf_add(ip_num); break;
 			case TOP_DATA_SEARCH: top_data_search(ip_num); break;
+			case TOP_DATA_DELETE: top_data_search(ip_num); break;
 			}
 		}
 	}
@@ -284,11 +286,9 @@ void Ilms::proc_bf_add(unsigned long ip_num)
 	}
 	if(find)
 	{
+		sc.buf[0] = TOP_BF_ADD;
 		for(unsigned int i=0; i < top.size(); i++)
-		{
-			sc.buf[0] = TOP_BF_ADD;
 			this->send(top[i].get_ip_num(), sc.buf, sc.len);
-		}
 	}
 }
 
@@ -376,9 +376,6 @@ void Ilms::proc_data_search(unsigned long ip_num)
 	}
 	else
 	{
-		*(unsigned long *)p_depth = htonl(depth);
-
-		*up_down = MARK_UP;
 		sc.buf[0] = TOP_DATA_SEARCH;
 		send_top(data);
 	}
@@ -472,9 +469,6 @@ void Ilms::proc_data_delete(unsigned long ip_num)
 	}
 	else
 	{
-		*(unsigned long *)p_depth = htonl(depth);
-
-		*up_down = MARK_UP;
 		sc.buf[0] = TOP_DATA_DELETE;		
 		send_top(data);
 	}
@@ -545,8 +539,6 @@ void Ilms::req_data_search(unsigned long ip_num)
 	}
 	else
 	{
-		up_down = MARK_UP;
-		*(unsigned long *)p_depth = 0;
 		sc.buf[0] = TOP_DATA_SEARCH;
 		send_top(data);
 	}
@@ -606,8 +598,6 @@ void Ilms::req_data_delete(unsigned long ip_num)
 	}
 	else
 	{
-		up_down = MARK_UP;
-		*(unsigned long *)p_depth = 0;
 		sc.buf[0] = TOP_DATA_SEARCH;
 		send_top(data);
 	}
@@ -703,7 +693,7 @@ void Ilms::top_bf_add(unsigned long ip_num)
 	}
 }
 
-void Ilms::top_data_search(unsigned long ip_num)
+void Ilms::top_data_search()
 {
 	char *data;
 	unsigned long ip_org_num;
@@ -729,7 +719,33 @@ void Ilms::top_data_search(unsigned long ip_num)
 	sc.buf[0] = CMD_DATA_SEARCH_DOWN;
 	send_child(data);
 
-	sc.buf[0] = PEER_DATA_SEARCH;
+	sc.buf[0] = PEER_DATA_SEARCH_DOWN;
+	send_peer(data);
+}
+
+void Ilms::top_data_delete()
+{
+	char *data;
+	unsigned long ip_org_num;
+
+	if(!sc.next_value(data,DATA_SIZE))
+		return;
+
+	if(!sc.next_value(ip_org_num))
+		return;
+
+	if(my_filter->lookup(data))
+	{
+		if(remove(data,DATA_SIZE))
+			return;
+	}
+
+	sc.len = sc.get_cur() - sc.buf;
+
+	sc.buf[0] = CMD_DATA_SEARCH_DOWN;
+	send_child(data);
+
+	sc.buf[0] = PEER_DATA_SEARCH_DOWN;
 	send_peer(data);
 }
 

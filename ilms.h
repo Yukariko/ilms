@@ -55,7 +55,9 @@ public:
 	//peer
 	void peer_bf_add(unsigned long ip_num);
 	void peer_data_search(unsigned long ip_num);
+	void peer_data_search_down();
 	void peer_data_delete(unsigned long ip_num);
+	void peer_data_delete_down();
 
 private:
 

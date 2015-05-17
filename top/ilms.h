@@ -58,7 +58,8 @@ public:
 
 	//top
 	void top_bf_add(unsigned long ip_num);
-	void top_data_search(unsigned long ip_num);
+	void top_data_search();
+	void top_data_delete();
 
 private:
 

@@ -28,7 +28,7 @@
 #define MARK_DOWN									0x00
 
 
-//#define MODE 1
+#define MODE 1
 #ifdef MODE
 #define DEBUG(s) (std::cout << s << std::endl)
 #endif
@@ -114,7 +114,10 @@ Ilms::Ilms()
 Ilms::~Ilms()
 {
 	delete my_filter;
-	delete[] child_filter;
+	if(child.size())
+		delete[] child_filter;
+	if(down_peer.size())
+		delete[] peer_fileter;
 	close(sock);
 }
 
@@ -156,7 +159,9 @@ void Ilms::start()
 			case CMD_DATA_ADD: proc_data_add(); break;
 			case CMD_DATA_SEARCH: proc_data_search(ip_num); break;
 			case CMD_DATA_SEARCH_FAIL: proc_data_search_fail(); break;
+			case CMD_DATA_SEARCH_DOWN: proc_data_search_down(); break;
 			case CMD_DATA_DELETE: proc_data_delete(ip_num); break;
+			case CMD_DATA_DELETE_DOWN: proc_data_delete_down(); break;
 
 			case REQ_DATA_ADD: req_data_add(); break;
 			case REQ_DATA_SEARCH: req_data_search(ip_num); break;
@@ -164,7 +169,9 @@ void Ilms::start()
 
 			case PEER_BF_ADD: peer_bf_add(ip_num); break;
 			case PEER_DATA_SEARCH: peer_data_search(ip_num); break;
+			case PEER_DATA_SEARCH_DOWN: peer_data_search_down(); break;
 			case PEER_DATA_DELETE: peer_data_delete(ip_num); break;
+			case PEER_DATA_DELETE_DOWN: peer_data_search_down(); break;
 			}
 		}
 	}
@@ -690,6 +697,8 @@ void Ilms::proc_data_search_down()
 		}
 	}
 	send_child(data);
+	sc.buf[0] = PEER_DATA_SEARCH_DOWN;
+	send_peer(data);
 }
 
 void Ilms::proc_data_delete_down()
@@ -710,6 +719,48 @@ void Ilms::proc_data_delete_down()
 	}
 
 	send_child(data);
+	sc.buf[0] = PEER_DATA_DELETE_DOWN;
+	send_peer(data);
+}
+
+void Ilms::peer_data_search_down()
+{
+	char *data;
+	unsigned long ip_org_num;
+
+	if(!sc.next_value(data,DATA_SIZE))
+		return;
+
+	if(!sc.next_value(ip_org_num))
+		return;
+
+	if(my_filter->lookup(data))
+	{
+		std::string ret;
+		if(search(data,DATA_SIZE,ret))
+		{
+			this->send(ip_org_num, ret.c_str(), ret.length());
+			return;
+		}
+	}
+}
+
+void Ilms::peer_data_delete_down()
+{
+	char *data;
+	unsigned long ip_org_num;
+
+	if(!sc.next_value(data,DATA_SIZE))
+		return;
+
+	if(!sc.next_value(ip_org_num))
+		return;
+
+	if(my_filter->lookup(data))
+	{
+		if(remove(data,DATA_SIZE))
+			return;
+	}
 }
 
 /*
