@@ -117,7 +117,7 @@ Ilms::~Ilms()
 	if(child.size())
 		delete[] child_filter;
 	if(down_peer.size())
-		delete[] peer_fileter;
+		delete[] peer_filter;
 	close(sock);
 }
 
