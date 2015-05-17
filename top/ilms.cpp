@@ -687,7 +687,7 @@ void Ilms::top_bf_add(unsigned long ip_num)
 	{
 		if(ip_num == top[i].get_ip_num())
 		{
-			top[i]->insert(data);
+			top_filter[i]->insert(data);
 			break;
 		}
 	}
