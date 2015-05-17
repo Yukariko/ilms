@@ -31,7 +31,7 @@
 #define MARK_DOWN									0x00
 
 
-//#define MODE 1
+#define MODE 1
 #ifdef MODE
 #define DEBUG(s) (std::cout << s << std::endl)
 #endif
