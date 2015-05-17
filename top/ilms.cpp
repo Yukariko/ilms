@@ -129,7 +129,7 @@ Ilms::~Ilms()
 	if(top.size())
 		delete[] top_filter;
 	if(down_peer.size())
-		delete[] peer_filter
+		delete[] peer_filter;
 	close(sock);
 }
 
@@ -182,8 +182,8 @@ void Ilms::start()
 			case PEER_DATA_DELETE: peer_data_delete(ip_num); break;
 
 			case TOP_BF_ADD: top_bf_add(ip_num); break;
-			case TOP_DATA_SEARCH: top_data_search(ip_num); break;
-			case TOP_DATA_DELETE: top_data_search(ip_num); break;
+			case TOP_DATA_SEARCH: top_data_search(); break;
+			case TOP_DATA_DELETE: top_data_search(); break;
 			}
 		}
 	}
