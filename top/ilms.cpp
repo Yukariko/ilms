@@ -23,6 +23,8 @@
 #define PEER_DATA_DELETE					0x34
 #define PEER_DATA_DELETE_DOWN			0x35
 
+#define TOP_BF_ADD								0x40
+#define TOP_DATA_SEARCH						0x41
 
 #define MARK_UP										0x01
 #define MARK_DOWN									0x00
@@ -86,6 +88,13 @@ Ilms::Ilms()
 			peer_filter[i] = new Bloomfilter(defaultSize, 11, hash);	
 	}
 	
+	if(top.size())
+	{
+		top_filter = new Bloomfilter*[top.size()];
+		for(unsigned int i=0; i < top.size(); i++)
+			top_filter[i] = new Bloomfilter(defaultSize, 11, hash);			
+	}
+
 	// socket init
 	sock = socket(PF_INET, SOCK_DGRAM, 0);
 	if(sock == -1)
@@ -114,7 +123,12 @@ Ilms::Ilms()
 Ilms::~Ilms()
 {
 	delete my_filter;
-	delete[] child_filter;
+	if(child.size())
+		delete[] child_filter;
+	if(top.size())
+		delete[] top_filter;
+	if(down_peer.size())
+		delete[] peer_filter
 	close(sock);
 }
 
@@ -165,6 +179,9 @@ void Ilms::start()
 			case PEER_BF_ADD: peer_bf_add(ip_num); break;
 			case PEER_DATA_SEARCH: peer_data_search(ip_num); break;
 			case PEER_DATA_DELETE: peer_data_delete(ip_num); break;
+
+			case TOP_BF_ADD: top_bf_add(ip_num); break;
+			case TOP_DATA_SEARCH: top_data_search(ip_num); break;
 			}
 		}
 	}
@@ -233,6 +250,17 @@ int Ilms::send_peer(char *data)
 	return ret;
 }
 
+void Ilms::send_top(char *data)
+{
+	for(unsigned int i=0; i < top.size(); i++)
+	{
+		if(top_filter[i]->lookup(data))
+		{
+			this->send(top[i].get_ip_num(), sc.buf, sc.len);
+		}
+	}
+}
+
 /*
  * 블룸필터 데이터 추가
  * 부모노드에도 추가해야 하므로 버퍼그대로 전송
@@ -255,7 +283,13 @@ void Ilms::proc_bf_add(unsigned long ip_num)
 		}
 	}
 	if(find)
-		this->send(parent->get_ip_num(), sc.buf, sc.len);
+	{
+		for(unsigned int i=0; i < top.size(); i++)
+		{
+			sc.buf[0] = TOP_BF_ADD;
+			this->send(top[i].get_ip_num(), sc.buf, sc.len);
+		}
+	}
 }
 
 /*
@@ -276,12 +310,9 @@ void Ilms::proc_data_add()
 	my_filter->insert(data);
 	insert(data,DATA_SIZE,value,*(unsigned char *)(value-1));
 
-	sc.buf[0] = CMD_BF_ADD;
-	this->send(parent->get_ip_num(), sc.buf, sc.len);
-
-	sc.buf[0] = PEER_BF_ADD;
-	for(unsigned int i=0; i < up_peer.size(); i++)
-		this->send(up_peer[i].get_ip_num(), sc.buf, sc.len);
+	sc.buf[0] = TOP_BF_ADD;
+	for(unsigned int i=0; i < top.size(); i++)
+		this->send(top[i].get_ip_num(), sc.buf, sc.len);
 }
 
 /*
@@ -348,15 +379,8 @@ void Ilms::proc_data_search(unsigned long ip_num)
 		*(unsigned long *)p_depth = htonl(depth);
 
 		*up_down = MARK_UP;
-
-		if(depth > 0)
-		{
-			sc.buf[sc.len++] = CMD_DATA_SEARCH;
-			sc.buf[0] = CMD_DATA_SEARCH_FAIL;
-		}
-		else
-			sc.buf[0] = CMD_DATA_SEARCH;
-		this->send(parent->get_ip_num(), sc.buf, sc.len);
+		sc.buf[0] = TOP_DATA_SEARCH;
+		send_top(data);
 	}
 }
 
@@ -385,9 +409,8 @@ void Ilms::proc_data_search_fail()
 		
 		*(unsigned long *)p_depth = htonl(depth-1);
 
-		if(depth == 1)
-			sc.buf[0] = sc.buf[--sc.len];
-		this->send(parent->get_ip_num(), sc.buf, sc.len);
+		sc.buf[0] = TOP_DATA_SEARCH;
+		send_top(data);
 		return;
 	}
 
@@ -452,15 +475,8 @@ void Ilms::proc_data_delete(unsigned long ip_num)
 		*(unsigned long *)p_depth = htonl(depth);
 
 		*up_down = MARK_UP;
-
-		if(depth > 0)
-		{
-			sc.buf[sc.len++] = CMD_DATA_DELETE;
-			sc.buf[0] = CMD_DATA_SEARCH_FAIL;
-		}
-		else
-			sc.buf[0] = CMD_DATA_DELETE;
-		this->send(parent->get_ip_num(), sc.buf, sc.len);
+		sc.buf[0] = TOP_DATA_DELETE;		
+		send_top(data);
 	}
 }
 
@@ -531,7 +547,8 @@ void Ilms::req_data_search(unsigned long ip_num)
 	{
 		up_down = MARK_UP;
 		*(unsigned long *)p_depth = 0;
-		this->send(parent->get_ip_num(), sc.buf, sc.len);
+		sc.buf[0] = TOP_DATA_SEARCH;
+		send_top(data);
 	}
 }
 
@@ -591,7 +608,8 @@ void Ilms::req_data_delete(unsigned long ip_num)
 	{
 		up_down = MARK_UP;
 		*(unsigned long *)p_depth = 0;
-		this->send(parent->get_ip_num(), sc.buf, sc.len);
+		sc.buf[0] = TOP_DATA_SEARCH;
+		send_top(data);
 	}
 }
 
@@ -669,7 +687,23 @@ void Ilms::peer_data_delete(unsigned long ip_num)
 	this->send(ip_num, sc.buf, sc.len);
 }
 
-void Ilms::proc_data_search_down()
+void Ilms::top_bf_add(unsigned long ip_num)
+{
+	char *data;
+	if(!sc.next_value(data,DATA_SIZE))
+		return;
+
+	for(unsigned int i=0; i < top.size(); i++)
+	{
+		if(ip_num == top[i].get_ip_num())
+		{
+			top[i]->insert(data);
+			break;
+		}
+	}
+}
+
+void Ilms::top_data_search(unsigned long ip_num)
 {
 	char *data;
 	unsigned long ip_org_num;
@@ -689,27 +723,14 @@ void Ilms::proc_data_search_down()
 			return;
 		}
 	}
+
+	sc.len = sc.get_cur() - sc.buf;
+
+	sc.buf[0] = CMD_DATA_SEARCH_DOWN;
 	send_child(data);
-}
 
-void Ilms::proc_data_delete_down()
-{
-	char *data;
-	unsigned long ip_org_num;
-
-	if(!sc.next_value(data,DATA_SIZE))
-		return;
-
-	if(!sc.next_value(ip_org_num))
-		return;
-
-	if(my_filter->lookup(data))
-	{
-		if(remove(data,DATA_SIZE))
-			return;
-	}
-
-	send_child(data);
+	sc.buf[0] = PEER_DATA_SEARCH;
+	send_peer(data);
 }
 
 /*

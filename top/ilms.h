@@ -31,6 +31,7 @@ public:
 	int send_child(char *data);
 	int send_child(unsigned long ip_num, char *data);
 	int send_peer(char *data);
+	void send_top(char *data);
 
 	//data
 	void insert(char *key,int klen,char *val,int vlen);
@@ -43,9 +44,7 @@ public:
 	void proc_data_add();
 	void proc_data_search(unsigned long ip_num);
 	void proc_data_search_fail();
-	void proc_data_search_down();
 	void proc_data_delete(unsigned long ip_num);
-	void proc_data_delete_down();
 
 	//request
 	void req_data_add();
@@ -57,6 +56,10 @@ public:
 	void peer_data_search(unsigned long ip_num);
 	void peer_data_delete(unsigned long ip_num);
 
+	//top
+	void top_bf_add(unsigned long ip_num);
+	void top_data_search(unsigned long ip_num);
+
 private:
 
 	leveldb::DB* db;
@@ -65,6 +68,7 @@ private:
 
 	Bloomfilter *my_filter;
 	Bloomfilter **child_filter;
+	Bloomfilter **top_filter;
 	Bloomfilter **peer_filter;
 
 	Scanner sc;
