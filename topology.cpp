@@ -55,7 +55,6 @@ unsigned long Node::get_ip_num()
 /*
  * 트리 생성자
  * 파일로부터 트리 정보를 받아와야 함
- * try catch 구현 필요
  */
 
 Tree::Tree()
@@ -137,38 +136,6 @@ Tree::~Tree()
 {
 	delete parent;
 }
-
-
-/*
- * 부모 노드를 반환하는 함수
- * 부모 노드는 하나라고 가정하기 때문에 Node 클래스 리턴
- */
-
-Node Tree::get_parent()
-{
-	return *parent;
-}
-
-/*
- * 자식 노드를 반환하는 함수
- * 자식은 여러개 있을 수 있기 때문에 벡터로 리턴
- */
-
-std::vector<Node> Tree::get_child()
-{
-	return child;
-}
-
-/*
- * 피어노드를 반환하는 함수
- * 피어노드는 여러개 있을 수 있어 벡터로 리턴
- */
-
-std::vector<Node> Tree::get_peer()
-{
-	return down_peer;
-}
-
 
 /*
  * 오류가 발생시 해당 오류를 출력하고 종료

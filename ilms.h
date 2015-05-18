@@ -60,7 +60,6 @@ public:
 	void peer_data_delete_down();
 
 private:
-
 	leveldb::DB* db;
 	leveldb::Options options;
 

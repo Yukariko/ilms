@@ -24,9 +24,6 @@ class Tree
 public:
 	Tree();
 	~Tree();
-	Node get_parent();
-	std::vector<Node> get_child();
-	std::vector<Node> get_peer();
 
 protected:
 	void error_handling(const char *message);
