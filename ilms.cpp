@@ -44,14 +44,14 @@
 long long test(long long data){return data*997*1499;}
 long long test2(long long data){return data*1009*1361;}
 long long test3(long long data){return data*1013*1327;}
-long long test4(long long data){return data*1013*1327;}
-long long test5(long long data){return data*1013*1327;}
-long long test6(long long data){return data*1013*1327;}
-long long test7(long long data){return data*1013*1327;}
-long long test8(long long data){return data*1013*1327;}
-long long test9(long long data){return data*1013*1327;}
-long long test10(long long data){return data*1013*1327;}
-long long test11(long long data){return data*1013*1327;}
+long long test4(long long data){return data*3*5;}
+long long test5(long long data){return data*7*11;}
+long long test6(long long data){return data*13*17;}
+long long test7(long long data){return data*23*29;}
+long long test8(long long data){return data*31*37;}
+long long test9(long long data){return data*41*43;}
+long long test10(long long data){return data*47*53;}
+long long test11(long long data){return data*59*61;}
 
 
 /*
