@@ -41,17 +41,19 @@
  * 테스트 해시 함수
  */
 
-long long test(long long data){return data*997*1499;}
-long long test2(long long data){return data*1009*1361;}
-long long test3(long long data){return data*1013*1327;}
-long long test4(long long data){return data*3*5;}
-long long test5(long long data){return data*7*11;}
-long long test6(long long data){return data*13*17;}
-long long test7(long long data){return data*23*29;}
-long long test8(long long data){return data*31*37;}
-long long test9(long long data){return data*41*43;}
-long long test10(long long data){return data*47*53;}
-long long test11(long long data){return data*59*61;}
+const long long defaultSize = 8LL * 2 * 1024 * 1024;
+
+long long test(char *data){return *(unsigned short *)data % (defaultSize / 10);}
+long long test2(char *data){return data*1009*1361;}
+long long test3(char *data){return data*1013*1327;}
+long long test4(char *data){return data*3*5;}
+long long test5(char *data){return data*7*11;}
+long long test6(char *data){return data*13*17;}
+long long test7(char *data){return data*23*29;}
+long long test8(char *data){return data*31*37;}
+long long test9(char *data){return data*41*43;}
+long long test10(char *data){return data*47*53;}
+long long test11(char *data){return data*59*61;}
 
 
 /*
@@ -68,7 +70,7 @@ const long long defaultSize = 8LL * 2 * 1024 * 1024;
 Ilms::Ilms()
 {
 	// bloomfilter init
-	long long (*hash[11])(long long) = {test,test2,test3,test4,test5,test6,test7,test8,test9,test10,test11};
+	long long (*hash[11])(char *) = {test,test2,test3,test4,test5,test6,test7,test8,test9,test10,test11};
 	
 	my_filter = new Bloomfilter(defaultSize, 11, hash);
 
@@ -201,9 +203,11 @@ void Ilms::send(unsigned long ip_num,const char *buf,int len)
 int Ilms::send_child(char *data)
 {
 	int ret = 0;
+	long long bitArray[12];
+	my_filter->getBitArray(bitArray,data);
 	for(unsigned int i=0; i < child.size(); i++)
 	{
-		if(child_filter[i]->lookup(data))
+		if(child_filter[i]->lookBitArray(bitArray))
 		{
 			this->send(child[i].get_ip_num(), sc.buf, sc.len);
 			ret++;
@@ -215,9 +219,11 @@ int Ilms::send_child(char *data)
 int Ilms::send_child(unsigned long ip_num, char *data)
 {
 	int ret = 0;
+	long long bitArray[12];
+	my_filter->getBitArray(bitArray,data);
 	for(unsigned int i=0; i < child.size(); i++)
 	{
-		if(ip_num != child[i].get_ip_num() && child_filter[i]->lookup(data))
+		if(ip_num != child[i].get_ip_num() && child_filter[i]->lookBitArray(bitArray))
 		{
 			this->send(child[i].get_ip_num(), sc.buf, sc.len);
 			ret++;
@@ -229,9 +235,11 @@ int Ilms::send_child(unsigned long ip_num, char *data)
 int Ilms::send_peer(char *data)
 {
 	int ret = 0;
+	long long bitArray[12];
+	my_filter->getBitArray(bitArray,data);
 	for(unsigned int i=0; i < down_peer.size(); i++)
 	{
-		if(peer_filter[i]->lookup(data))
+		if(peer_filter[i]->lookBitArray(bitArray))
 		{
 			this->send(down_peer[i].get_ip_num(), sc.buf, sc.len);
 			ret++;

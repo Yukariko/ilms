@@ -9,12 +9,12 @@
  * hash : 해시 함수 배열
  */
 
-Bloomfilter::Bloomfilter(long long size, int numHash,long long (**hash)(long long))
+Bloomfilter::Bloomfilter(long long size, int numHash,long long (**hash)(char *))
 {
 	this->size = size;
 	this->numHash = numHash;
 
-	this->hash = new(long long (*[numHash])(long long));
+	this->hash = new(long long (*[numHash])(char *));
 
 	for(int i=0;i<numHash;i++)
 		this->hash[i] = hash[i];
@@ -40,10 +40,9 @@ Bloomfilter::~Bloomfilter()
 
 void Bloomfilter::insert(char *data)
 {
-	const long long find = *(long long *)data;
 	for(int i=0;i<numHash;i++)
 	{
-		const long long res = hash[i](find) % size;
+		const long long res = hash[i](data) % size;
 		field[res>>3] |= (1 << (res&7));
 	}
 }
@@ -54,12 +53,29 @@ void Bloomfilter::insert(char *data)
 
 bool Bloomfilter::lookup(char *data)
 {
-	const long long find = *(long long *)data;
 	for(int i=0;i<numHash;i++)
 	{
-		const long long res = hash[i](find) % size;
+		const long long res = hash[i](data) % size;
 		if(!(field[res>>3] & (1 << (res&7))))
 			return false;
 	}
 	return true;
+}
+
+bool Bloomfilter::lookBitArray(long long *bitArray)
+{
+	for(int i=0;i<numHash;i++)
+	{
+		const long long res = bitArray[i];
+		if(!(field[res>>3] & (1 << (res&7))))
+			return false;
+	}
+	return true;
+}
+void Bloomfilter::getBitArray(long long *bitArray, char *data)
+{
+	for(int i=0;i<numHash;i++)
+	{
+		bitArray[i] = hash[i](data) % size;
+	}
 }
