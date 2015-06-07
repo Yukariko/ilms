@@ -58,8 +58,8 @@ public:
 	void peer_data_search_down();
 	
 	//thread
-	static void child_run(unsigned int i);
-	static void peer_run(unsigned int i);
+	void child_run(unsigned int i);
+	void peer_run(unsigned int i);
 
 private:
 	leveldb::DB* db;
