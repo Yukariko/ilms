@@ -79,4 +79,13 @@ private:
 	static struct sockaddr_in serv_adr;
 };
 
+Bloomfilter* Ilms::my_filter;
+Bloomfilter** Ilms::child_filter;
+Bloomfilter** Ilms::peer_filter;
+Scanner Ilms::sc;
+std::atomic<int> Ilms::global_counter;
+long long [12] Ilms::bitArray;
+int Ilms::sock;
+struct sockaddr_in Ilms::serv_adr;
+
 #endif
