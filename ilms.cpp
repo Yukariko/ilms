@@ -172,7 +172,7 @@ void Ilms::start()
  * 버퍼 전송
  */
 
-static void Ilms::send(unsigned long ip_num,const char *buf,int len)
+void Ilms::send(unsigned long ip_num,const char *buf,int len)
 {
 	if(ip_num==0)
 		return;
@@ -190,11 +190,11 @@ static void Ilms::send(unsigned long ip_num,const char *buf,int len)
 	DEBUG("Send OK!");
 }
 
-static void Ilms::child_run(unsigned int i)
+void Ilms::child_run(unsigned int i)
 {
-	//if(child_filter[i]->lookBitArray(bitArray))
+	if(child_filter[i]->lookBitArray(bitArray))
 	{
-		//Ilms::send(child[i].get_ip_num(), sc.buf, sc.len);
+		Ilms::send(child[i].get_ip_num(), sc.buf, sc.len);
 		Ilms::global_counter++;
 	}
 }
@@ -249,11 +249,11 @@ int Ilms::send_child(unsigned long ip_num, char *data)
 	return ret;
 }
 
-static void Ilms::peer_run(unsigned int i)
+void Ilms::peer_run(unsigned int i)
 {
-	//if(peer_filter[i]->lookBitArray(bitArray))
+	if(peer_filter[i]->lookBitArray(bitArray))
 	{
-		//Ilms::send(down_peer[i].get_ip_num(), sc.buf, sc.len);
+		Ilms::send(down_peer[i].get_ip_num(), sc.buf, sc.len);
 		Ilms::global_counter++;
 	}
 }
