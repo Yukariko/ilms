@@ -82,7 +82,7 @@ struct sockaddr_in Ilms::serv_adr;
 Ilms::Ilms()
 {
 	// bloomfilter init
-	long long (*hash[11])(long long) = {test,test2,test3,test4,test5,test6,test7,test8,test9,test10,test11};
+	long long (*hash[11])(char *) = {test,test2,test3,test4,test5,test6,test7,test8,test9,test10,test11};
 	
 	my_filter = new Bloomfilter(defaultSize, 11, hash);
 
