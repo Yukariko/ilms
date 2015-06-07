@@ -176,6 +176,7 @@ static void Ilms::send(unsigned long ip_num,const char *buf,int len)
 {
 	if(ip_num==0)
 		return;
+
 	struct sockaddr_in clnt_adr;
 	socklen_t clnt_adr_sz = sizeof(clnt_adr);
 
@@ -193,7 +194,7 @@ static void Ilms::child_run(unsigned int i)
 {
 	if(child_filter[i]->lookBitArray(bitArray))
 	{
-		Ilms::send(child[i].get_ip_num(), sc.buf, sc.len);
+		//Ilms::send(child[i].get_ip_num(), sc.buf, sc.len);
 		global_counter++;
 	}
 }
@@ -252,7 +253,7 @@ static void Ilms::peer_run(unsigned int i)
 {
 	if(peer_filter[i]->lookBitArray(bitArray))
 	{
-		Ilms::send(down_peer[i].get_ip_num(), sc.buf, sc.len);
+		//Ilms::send(down_peer[i].get_ip_num(), sc.buf, sc.len);
 		global_counter++;
 	}
 }
