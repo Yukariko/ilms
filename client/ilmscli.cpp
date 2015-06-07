@@ -2,9 +2,10 @@
 
 #include "ilmscli.h"
 
-#define REQ_DATA_UPDATE							0x20
-#define REQ_DATA_SEARCH						0x21
-#define REQ_DATA_DELETE						0x22
+#define REQ_DATA_REGISTER					0x20
+#define REQ_DATA_UPDATE						0x21
+#define REQ_DATA_SEARCH						0x22
+#define REQ_DATA_DELETE						0x23
 
 
 /*
@@ -39,16 +40,35 @@ void IlmsCli::setIp(std::string ip)
 	this->ip = ip;
 }
 
+void IlmsCli::req_data_register(char *data,std::string ip)
+{
+	char header[256];
+	int len=0;
+
+	header[len++] = REQ_DATA_REGISTER;
+	for(int i=0; i < 24; i++)
+		header[len++] = data[i];
+	
+	header[len] = ip.length() + 1;
+	strcpy(header+len+1,ip.c_str());
+
+	len += header[len] + 1;
+
+	this->send(header,len);
+}
+
+
 /*
  * 데이터 추가 요청
  */
 
-void IlmsCli::req_data_add(char *data,std::string ip)
+void IlmsCli::req_data_update(char mode, char *data,std::string ip)
 {
 	char header[256];
 	int len=0;
 
 	header[len++] = REQ_DATA_UPDATE;
+	header[len++] = mode;
 	for(int i=0; i < 24; i++)
 		header[len++] = data[i];
 	

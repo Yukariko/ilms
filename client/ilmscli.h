@@ -18,7 +18,8 @@ public:
 	void setIp(std::string ip);
 
 
-	void req_data_add(char *data,std::string ip);
+	void req_data_register(char *data,std::string ip);
+	void req_data_update(char mode, char *data,std::string ip);
 	void req_data_delete(char *data);
 	int req_data_search(char *data,char *buf);
 

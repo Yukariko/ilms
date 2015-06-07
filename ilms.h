@@ -42,12 +42,12 @@ public:
 
 	//process
 	void proc_bf_add(unsigned long ip_num);
-	void proc_data_update();
 	void proc_data_search(unsigned long ip_num);
 	void proc_data_search_fail();
 	void proc_data_search_down();
 
 	//request
+	void req_data_register();
 	void req_data_update();
 	void req_data_search(unsigned long ip_num);
 	void req_data_delete(unsigned long ip_num);

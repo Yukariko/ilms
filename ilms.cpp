@@ -4,20 +4,24 @@
 #include "ilms.h"
 
 #define CMD_BF_ADD								0x00
-#define CMD_DATA_UPDATE						0x10
-#define CMD_DATA_SEARCH						0x11
-#define CMD_DATA_SEARCH_FAIL			0x12
-#define CMD_DATA_SEARCH_DOWN			0x13
-#define CMD_DATA_REPLACE					0x16
+#define CMD_DATA_SEARCH						0x10
+#define CMD_DATA_SEARCH_FAIL			0x11
+#define CMD_DATA_SEARCH_DOWN			0x12
+#define CMD_DATA_REPLACE					0x13
 
-#define REQ_DATA_UPDATE						0x20
-#define REQ_DATA_SEARCH						0x21
-#define REQ_DATA_DELETE						0x22
+#define REQ_DATA_REGISTER					0x20
+#define REQ_DATA_UPDATE						0x21
+#define REQ_DATA_SEARCH						0x22
+#define REQ_DATA_DELETE						0x23
 
 #define PEER_BF_ADD								0x30
 #define PEER_DATA_SEARCH					0x31
 #define PEER_DATA_SEARCH_FAIL			0x32
 #define PEER_DATA_SEARCH_DOWN			0x33
+
+#define DATA_ADD									0x00
+#define DATA_DELETE								0x01
+#define DATA_REPLACE							0X02
 
 #define MARK_UP										0x01
 #define MARK_DOWN									0x00
@@ -165,11 +169,11 @@ void Ilms::start()
 			switch(cmd)
 			{
 			case CMD_BF_ADD: proc_bf_add(ip_num); break;
-			case CMD_DATA_UPDATE: proc_data_update(); break;
 			case CMD_DATA_SEARCH: proc_data_search(ip_num); break;
 			case CMD_DATA_SEARCH_FAIL: proc_data_search_fail(); break;
 			case CMD_DATA_SEARCH_DOWN: proc_data_search_down(); break;
 
+			case REQ_DATA_REGISTER: req_data_register(); break;
 			case REQ_DATA_UPDATE: req_data_update(); break;
 			case REQ_DATA_SEARCH: req_data_search(ip_num); break;
 			case REQ_DATA_DELETE: req_data_delete(ip_num); break;
@@ -317,31 +321,6 @@ void Ilms::proc_bf_add(unsigned long ip_num)
 		this->send(parent->get_ip_num(), sc.buf, sc.len);
 }
 
-/*
- * 데이터 추가. 블룸필터에도 추가해야함
- * 처음 노드일 경우만 해당하며, 부모에는 블룸필터 추가로 전송
- */
-
-void Ilms::proc_data_update()
-{
-	char *data;
-	char *value;
-	if(!sc.next_value(data,DATA_SIZE))
-		return;
-
-	if(!sc.next_value(value))
-		return;
-
-	my_filter->insert(data);
-	insert(data,DATA_SIZE,value,*(unsigned char *)(value-1));
-
-	sc.buf[0] = CMD_BF_ADD;
-	this->send(parent->get_ip_num(), sc.buf, sc.len);
-
-	sc.buf[0] = PEER_BF_ADD;
-	for(unsigned int i=0; i < up_peer.size(); i++)
-		this->send(up_peer[i].get_ip_num(), sc.buf, sc.len);
-}
 
 /*
  * 데이터 검색. 다음의 순서로 동작
@@ -455,6 +434,28 @@ void Ilms::proc_data_search_fail()
 }
 
 
+void Ilms::req_data_register()
+{
+	char *data;
+	char *value;
+
+	if(!sc.next_value(data,DATA_SIZE))
+		return;
+
+	if(!sc.next_value(value))
+		return;
+
+	my_filter->insert(data);
+	insert(data,DATA_SIZE,value,*(unsigned char *)(value-1));
+
+	sc.buf[0] = CMD_BF_ADD;
+	this->send(parent->get_ip_num(), sc.buf, sc.len);
+
+	sc.buf[0] = PEER_BF_ADD;
+	for(unsigned int i=0; i < up_peer.size(); i++)
+		this->send(up_peer[i].get_ip_num(), sc.buf, sc.len);
+}
+
 /*
  * 클라이언트로 부터의 데이터 추가 요청
  * 사실상 기존 프로토콜과 동일함
@@ -462,8 +463,38 @@ void Ilms::proc_data_search_fail()
 
 void Ilms::req_data_update()
 {
-	sc.buf[0] = CMD_DATA_UPDATE;
-	proc_data_update();
+	char mode;
+	char *data;
+	char *value;
+
+	if(!sc.next_value(mode))
+		return;
+
+	if(!sc.next_value(data,DATA_SIZE))
+		return;
+
+	if(!sc.next_value(value))
+		return;
+
+
+	if(mode == DATA_ADD)
+	{
+		std::string ret;
+		if(search(data,DATA_SIZE,ret))
+		{
+			ret += ":";
+			ret += value;
+			insert(data,DATA_SIZE,ret,ret.size());
+		}
+	}
+	else if(mode == DATA_DELETE)
+	{
+
+	}
+	else if(mode == DATA_REPLACE)
+	{
+		insert(data,DATA_SIZE,value,*(unsigned char *)(value-1));
+	}
 }
 
 /*
@@ -540,29 +571,9 @@ void Ilms::req_data_delete(unsigned long ip_num)
 	if(!sc.next_value(data,DATA_SIZE))
 		return;
 
-	char *pos = sc.get_cur();
-
-	*(unsigned long *)pos = ip_num;
-	pos += 4;
-
-	char &up_down = *pos;
-	pos++;
-
-	char *p_depth = pos;
-	pos += 4;
-
-	*(unsigned long *)p_depth = 0;
-
-	sc.len = pos - sc.buf;
-
 	if(my_filter->lookup(data))
 	{
-		std::string ret;
-		if(search(data,DATA_SIZE,ret))
-		{
-			this->send(ip_num, ret.c_str(), ret.length());
-			return;
-		}
+		remove(data, DATA_SIZE)
 	}
 }
 

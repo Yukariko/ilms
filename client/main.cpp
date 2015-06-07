@@ -22,6 +22,17 @@ int main()
 			ilms.setIp(value);
 		}
 
+		else if(strcmp(cmd, "REG") == 0)
+		{
+			if(scanf("%s%s",data,value) != 2)
+			{
+				std::cout << "ERROR" << std::endl;
+				exit(1);
+			}
+
+			ilms.req_data_register(data, value);
+		}
+
 		else if(strcmp(cmd, "SET") == 0)
 		{
 			if(scanf("%s%s",data,value) != 2)
@@ -30,7 +41,7 @@ int main()
 				exit(1);
 			}
 
-			ilms.req_data_add(data, value);
+			ilms.req_data_update(0, data, value);
 		}
 
 		else if(strcmp(cmd, "GET") == 0)
@@ -45,6 +56,17 @@ int main()
 
 			if(len > 0)
 				std::cout << buf << std::endl;
+		}
+
+		else if(strcmp(cmd, "SUB") == 0)
+		{
+			if(scanf("%s%s",data,value) != 2)
+			{
+				std::cout << "ERROR" << std::endl;
+				exit(1);
+			}
+
+			ilms.req_data_update(1, data, value);
 		}
 
 		else if(strcmp(cmd, "DELETE") == 0)
