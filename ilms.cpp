@@ -209,7 +209,7 @@ int Ilms::send_child(char *data)
 
 		for(unsigned int j=0; j < range; j++, i++)
 		{
-			task[j] = std::thread(&(Ilms::child_run),this,i);
+			task[j] = std::thread(&Ilms::child_run,this,i);
 		}
 
 		for(unsigned int j=0; j < range; j++)
@@ -237,7 +237,7 @@ int Ilms::send_child(unsigned long ip_num, char *data)
 				range--;
 				continue;
 			}
-			task[j] = std::thread(&(Ilms::child_run),this,i);
+			task[j] = std::thread(&Ilms::child_run,this,i);
 		}
 
 		for(unsigned int j=0; j < range; j++)
@@ -267,7 +267,7 @@ int Ilms::send_peer(char *data)
 		global_counter = 0;
 
 		for(unsigned int j=0; j < range; j++, i++)
-			task[j] = std::thread(&(Ilms::peer_run),this,i);
+			task[j] = std::thread(&Ilms::peer_run,this,i);
 
 		for(unsigned int j=0; j < range; j++)
 		{
