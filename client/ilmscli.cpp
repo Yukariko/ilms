@@ -48,7 +48,7 @@ void IlmsCli::req_data_add(char *data,std::string ip)
 	char header[256];
 	int len=0;
 
-	header[len++] = REQ_DATA_ADD;
+	header[len++] = REQ_DATA_UPDATE;
 	for(int i=0; i < 24; i++)
 		header[len++] = data[i];
 	
