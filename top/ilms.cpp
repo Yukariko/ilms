@@ -39,6 +39,8 @@
  * 테스트 해시 함수
  */
 
+const long long defaultSize = 8LL * 2 * 1024 * 1024;
+
 long long test(char *data){return (*(unsigned short *)(data + 0) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 0;}
 long long test2(char *data){return (*(unsigned short *)(data + 2) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 1;}
 long long test3(char *data){return (*(unsigned short *)(data + 4) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 2;}
@@ -61,7 +63,6 @@ long long test11(char *data){return (*(unsigned int *)(data + 20) * 1009LL);}
  * UDP 통신이며 포트는 7979
  */
 
-const long long defaultSize = 8LL * 2 * 1024 * 1024;
 
 Ilms::Ilms()
 {

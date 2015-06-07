@@ -60,8 +60,6 @@ long long test11(char *data){return (*(unsigned int *)(data + 20) * 1009LL);}
  * UDP 통신이며 포트는 7979
  */
 
-const long long defaultSize = 8LL * 2 * 1024 * 1024;
-
 Ilms::Ilms()
 {
 	// bloomfilter init
