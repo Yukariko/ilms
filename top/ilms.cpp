@@ -183,10 +183,10 @@ void Ilms::start()
 			switch(cmd)
 			{
 			case CMD_BF_ADD: proc_bf_add(ip_num); break;
-			case CMD_DATA_UPDATE: proc_data_update(); break;
 			case CMD_DATA_SEARCH: proc_data_search(ip_num); break;
 			case CMD_DATA_SEARCH_FAIL: proc_data_search_fail(); break;
 
+			case REQ_DATA_REGISTER: req_data_register(); break;
 			case REQ_DATA_UPDATE: req_data_update(); break;
 			case REQ_DATA_SEARCH: req_data_search(ip_num); break;
 			case REQ_DATA_DELETE: req_data_delete(ip_num); break;
