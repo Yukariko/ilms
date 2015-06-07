@@ -72,7 +72,7 @@ private:
 
 	static Scanner sc;
 
-	std::atomic<int> global_counter;
+	static std::atomic<int> global_counter;
 	std::thread task[NTHREAD];
 	static long long bitArray[12];
 	static int sock;
