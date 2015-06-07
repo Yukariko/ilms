@@ -4,15 +4,13 @@
 #include "ilms.h"
 
 #define CMD_BF_ADD								0x00
-#define CMD_DATA_ADD							0x10
+#define CMD_DATA_UPDATE						0x10
 #define CMD_DATA_SEARCH						0x11
 #define CMD_DATA_SEARCH_FAIL			0x12
 #define CMD_DATA_SEARCH_DOWN			0x13
-#define CMD_DATA_DELETE						0x14
-#define CMD_DATA_DELETE_DOWN			0x15
 #define CMD_DATA_REPLACE					0x16
 
-#define REQ_DATA_ADD							0x20
+#define REQ_DATA_UPDATE						0x20
 #define REQ_DATA_SEARCH						0x21
 #define REQ_DATA_DELETE						0x22
 
@@ -20,9 +18,6 @@
 #define PEER_DATA_SEARCH					0x31
 #define PEER_DATA_SEARCH_FAIL			0x32
 #define PEER_DATA_SEARCH_DOWN			0x33
-#define PEER_DATA_DELETE					0x34
-#define PEER_DATA_DELETE_DOWN			0x35
-
 
 #define MARK_UP										0x01
 #define MARK_DOWN									0x00
@@ -43,17 +38,17 @@
 
 const long long defaultSize = 8LL * 2 * 1024 * 1024;
 
-long long test(char *data){return *(unsigned short *)data % (defaultSize / 10);}
-long long test2(char *data){return data*1009*1361;}
-long long test3(char *data){return data*1013*1327;}
-long long test4(char *data){return data*3*5;}
-long long test5(char *data){return data*7*11;}
-long long test6(char *data){return data*13*17;}
-long long test7(char *data){return data*23*29;}
-long long test8(char *data){return data*31*37;}
-long long test9(char *data){return data*41*43;}
-long long test10(char *data){return data*47*53;}
-long long test11(char *data){return data*59*61;}
+long long test(char *data){return (*(unsigned short *)(data + 0) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 0;}
+long long test2(char *data){return (*(unsigned short *)(data + 2) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 1;}
+long long test3(char *data){return (*(unsigned short *)(data + 4) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 2;}
+long long test4(char *data){return (*(unsigned short *)(data + 6) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 3;;}
+long long test5(char *data){return (*(unsigned short *)(data + 8) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 4;;}
+long long test6(char *data){return (*(unsigned short *)(data + 10) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 5;;}
+long long test7(char *data){return (*(unsigned short *)(data + 12) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 6;;}
+long long test8(char *data){return (*(unsigned short *)(data + 14) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 7;;}
+long long test9(char *data){return (*(unsigned short *)(data + 16) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 8;;}
+long long test10(char *data){return (*(unsigned short *)(data + 18) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 9;}
+long long test11(char *data){return (*(unsigned int *)(data + 20) * 1009LL);}
 
 
 /*
@@ -158,22 +153,18 @@ void Ilms::start()
 			switch(cmd)
 			{
 			case CMD_BF_ADD: proc_bf_add(ip_num); break;
-			case CMD_DATA_ADD: proc_data_add(); break;
+			case CMD_DATA_UPDATE: proc_data_update(); break;
 			case CMD_DATA_SEARCH: proc_data_search(ip_num); break;
 			case CMD_DATA_SEARCH_FAIL: proc_data_search_fail(); break;
 			case CMD_DATA_SEARCH_DOWN: proc_data_search_down(); break;
-			case CMD_DATA_DELETE: proc_data_delete(ip_num); break;
-			case CMD_DATA_DELETE_DOWN: proc_data_delete_down(); break;
 
-			case REQ_DATA_ADD: req_data_add(); break;
+			case REQ_DATA_UPDATE: req_data_update(); break;
 			case REQ_DATA_SEARCH: req_data_search(ip_num); break;
 			case REQ_DATA_DELETE: req_data_delete(ip_num); break;
 
 			case PEER_BF_ADD: peer_bf_add(ip_num); break;
 			case PEER_DATA_SEARCH: peer_data_search(ip_num); break;
 			case PEER_DATA_SEARCH_DOWN: peer_data_search_down(); break;
-			case PEER_DATA_DELETE: peer_data_delete(ip_num); break;
-			case PEER_DATA_DELETE_DOWN: peer_data_search_down(); break;
 			}
 		}
 	}
@@ -200,17 +191,33 @@ void Ilms::send(unsigned long ip_num,const char *buf,int len)
 	DEBUG("Send OK!");
 }
 
+void *Ilms::child_run(void *arg)
+{
+	unsigned int i = *(unsigned int *)arg;
+	if(child_filter[i]->lookBitArray(bitArray))
+	{
+		this->send(child[i].get_ip_num(), sc.buf, sc.len);
+		return (void *)1;
+	}
+	return 0;
+}
+
 int Ilms::send_child(char *data)
 {
 	int ret = 0;
-	long long bitArray[12];
-	my_filter->getBitArray(bitArray,data);
-	for(unsigned int i=0; i < child.size(); i++)
+	for(unsigned int i=0; i < child.size();)
 	{
-		if(child_filter[i]->lookBitArray(bitArray))
+		unsigned int range = min(NTHREAD, child.size() - i);
+
+		for(unsigned int j=0; j < range; j++, i++)
+			pthread_create(&thread[j],0,child_run,(void *)i);
+
+		for(unsigned int j=0; j < range; j++)
 		{
-			this->send(child[i].get_ip_num(), sc.buf, sc.len);
-			ret++;
+			void *t;
+			pthread_join(thread[j],&t);
+			if(t == (void *)1)
+				ret++;
 		}
 	}
 	return ret;
@@ -219,30 +226,54 @@ int Ilms::send_child(char *data)
 int Ilms::send_child(unsigned long ip_num, char *data)
 {
 	int ret = 0;
-	long long bitArray[12];
-	my_filter->getBitArray(bitArray,data);
-	for(unsigned int i=0; i < child.size(); i++)
+	for(unsigned int i=0; i < child.size();)
 	{
-		if(ip_num != child[i].get_ip_num() && child_filter[i]->lookBitArray(bitArray))
+		unsigned int range = min(NTHREAD, child.size() - i);
+
+		for(unsigned int j=0; j < range; j++, i++)
 		{
-			this->send(child[i].get_ip_num(), sc.buf, sc.len);
-			ret++;
+			if(ip_num != child[i].get_ip_num())
+				pthread_create(&thread[j],0,child_run,(void *)i);
+		}
+
+		for(unsigned int j=0; j < range; j++)
+		{
+			void *t;
+			pthread_join(thread[j],&t);
+			if(t == (void *)1)
+				ret++;
 		}
 	}
 	return ret;
 }
 
+void *Ilms::peer_run(void *arg)
+{
+	unsigned int i = *(unsigned int *)arg;
+	if(peer_filter[i]->lookBitArray(bitArray))
+	{
+		this->send(down_peer[i].get_ip_num(), sc.buf, sc.len);
+		return (void *)1;
+	}
+	return 0;
+}
+
 int Ilms::send_peer(char *data)
 {
 	int ret = 0;
-	long long bitArray[12];
-	my_filter->getBitArray(bitArray,data);
-	for(unsigned int i=0; i < down_peer.size(); i++)
+	for(unsigned int i=0; i < down_peer.size();)
 	{
-		if(peer_filter[i]->lookBitArray(bitArray))
+		unsigned int range = min(NTHREAD, child.size() - i);
+
+		for(unsigned int j=0; j < range; j++, i++)
+			pthread_create(&thread[j],0,peer_run,(void *)i);
+
+		for(unsigned int j=0; j < range; j++)
 		{
-			this->send(down_peer[i].get_ip_num(), sc.buf, sc.len);
-			ret++;
+			void *t;
+			pthread_join(thread[j],&t);
+			if(t == (void *)1)
+				ret++;
 		}
 	}
 	return ret;
@@ -278,7 +309,7 @@ void Ilms::proc_bf_add(unsigned long ip_num)
  * 처음 노드일 경우만 해당하며, 부모에는 블룸필터 추가로 전송
  */
 
-void Ilms::proc_data_add()
+void Ilms::proc_data_update()
 {
 	char *data;
 	char *value;
@@ -317,7 +348,8 @@ void Ilms::proc_data_search(unsigned long ip_num)
 	if(!sc.next_value(ip_org_num))
 		return;
 
-	if(my_filter->lookup(data))
+	my_filter->getBitArray(bitArray,data);
+	if(my_filter->lookBitArray(bitArray))
 	{
 		std::string ret;
 		if(search(data,DATA_SIZE,ret))
@@ -409,84 +441,15 @@ void Ilms::proc_data_search_fail()
 	insert(data,DATA_SIZE+4, (char *)&count, sizeof(count));
 }
 
-/*
- * 데이터 삭제
- * 데이터 검색 매커니즘에서 검색후 알림 대신 삭제
- */
-
-void Ilms::proc_data_delete(unsigned long ip_num)
-{
-	char *data;
-	unsigned long ip_org_num;
-
-	if(!sc.next_value(data,DATA_SIZE))
-		return;
-
-	if(!sc.next_value(ip_org_num))
-		return;
-
-	if(my_filter->lookup(data))
-	{
-		if(remove(data,DATA_SIZE))
-			return;
-	}
-
-	char *up_down;
-	if(!sc.next_value(up_down,1))
-		return;
-
-	char *p_depth;
-	if(!sc.next_value(p_depth,4))
-		return;
-
-	unsigned long depth = ntohl(*(unsigned long *)p_depth);
-
-	int count = 0;
-
-	*(unsigned long *)p_depth = htonl(depth+1);
-
-	if(*up_down == MARK_UP)
-	{
-		*up_down = MARK_DOWN;
-		count += send_child(ip_num,data);
-	}
-	else
-	{
-		count += send_child(data);
-	}
-
-	sc.buf[0] = PEER_DATA_DELETE;
-	count += send_peer(data);
-
-	if(count)
-	{
-		insert(data,DATA_SIZE+4, (char *)&count, sizeof(count));
-	}
-	else
-	{
-		*(unsigned long *)p_depth = htonl(depth);
-
-		*up_down = MARK_UP;
-
-		if(depth > 0)
-		{
-			sc.buf[sc.len++] = CMD_DATA_DELETE;
-			sc.buf[0] = CMD_DATA_SEARCH_FAIL;
-		}
-		else
-			sc.buf[0] = CMD_DATA_DELETE;
-		this->send(parent->get_ip_num(), sc.buf, sc.len);
-	}
-}
 
 /*
  * 클라이언트로 부터의 데이터 추가 요청
  * 사실상 기존 프로토콜과 동일함
  */
 
-void Ilms::req_data_add()
+void Ilms::req_data_update()
 {
-	sc.buf[0] = CMD_DATA_ADD;
+	sc.buf[0] = CMD_DATA_UPDATE;
 	proc_data_add();
 }
 
@@ -517,7 +480,9 @@ void Ilms::req_data_search(unsigned long ip_num)
 
 	sc.len = pos - sc.buf;
 
-	if(my_filter->lookup(data))
+
+	my_filter->getBitArray(bitArray,data);
+	if(my_filter->lookBitArray(bitArray))
 	{
 		std::string ret;
 		if(search(data,DATA_SIZE,ret))
@@ -586,28 +551,6 @@ void Ilms::req_data_delete(unsigned long ip_num)
 			return;
 		}
 	}
-
-	up_down = MARK_DOWN;
-	*(unsigned long *)p_depth = htonl(1);
-
-	int count = 0;
-
-	sc.buf[0] = PEER_DATA_DELETE;
-	count += send_peer(data);
-
-	sc.buf[0] = CMD_DATA_DELETE;
-	count += send_child(data);
-
-	if(count)
-	{
-		insert(data,DATA_SIZE+4, (char *)&count, sizeof(count));
-	}
-	else
-	{
-		up_down = MARK_UP;
-		*(unsigned long *)p_depth = 0;
-		this->send(parent->get_ip_num(), sc.buf, sc.len);
-	}
 }
 
 void Ilms::peer_bf_add(unsigned long ip_num)
@@ -657,33 +600,6 @@ void Ilms::peer_data_search(unsigned long ip_num)
 	this->send(ip_num, sc.buf, sc.len);
 }
 
-void Ilms::peer_data_delete(unsigned long ip_num)
-{
-	char *data;
-	unsigned long ip_org_num;
-
-	if(!sc.next_value(data,DATA_SIZE))
-		return;
-
-	if(!sc.next_value(ip_org_num))
-		return;
-
-	if(my_filter->lookup(data))
-	{
-		if(remove(data,DATA_SIZE))
-			return;
-	}
-
-	char *up_down;
-	if(!sc.next_value(up_down,1))
-		return;
-
-	sc.buf[sc.len++] = CMD_DATA_DELETE;
-	sc.buf[0] = CMD_DATA_SEARCH_FAIL;
-	*up_down = MARK_UP;
-	this->send(ip_num, sc.buf, sc.len);
-}
-
 void Ilms::proc_data_search_down()
 {
 	char *data;
@@ -695,7 +611,8 @@ void Ilms::proc_data_search_down()
 	if(!sc.next_value(ip_org_num))
 		return;
 
-	if(my_filter->lookup(data))
+	my_filter->getBitArray(bitArray,data);
+	if(my_filter->lookBitArray(bitArray))
 	{
 		std::string ret;
 		if(search(data,DATA_SIZE,ret))
@@ -706,28 +623,6 @@ void Ilms::proc_data_search_down()
 	}
 	send_child(data);
 	sc.buf[0] = PEER_DATA_SEARCH_DOWN;
-	send_peer(data);
-}
-
-void Ilms::proc_data_delete_down()
-{
-	char *data;
-	unsigned long ip_org_num;
-
-	if(!sc.next_value(data,DATA_SIZE))
-		return;
-
-	if(!sc.next_value(ip_org_num))
-		return;
-
-	if(my_filter->lookup(data))
-	{
-		if(remove(data,DATA_SIZE))
-			return;
-	}
-
-	send_child(data);
-	sc.buf[0] = PEER_DATA_DELETE_DOWN;
 	send_peer(data);
 }
 
@@ -750,24 +645,6 @@ void Ilms::peer_data_search_down()
 			this->send(ip_org_num, ret.c_str(), ret.length());
 			return;
 		}
-	}
-}
-
-void Ilms::peer_data_delete_down()
-{
-	char *data;
-	unsigned long ip_org_num;
-
-	if(!sc.next_value(data,DATA_SIZE))
-		return;
-
-	if(!sc.next_value(ip_org_num))
-		return;
-
-	if(my_filter->lookup(data))
-	{
-		if(remove(data,DATA_SIZE))
-			return;
 	}
 }
 

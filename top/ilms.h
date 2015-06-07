@@ -41,25 +41,22 @@ public:
 
 	//process
 	void proc_bf_add(unsigned long ip_num);
-	void proc_data_add();
+	void proc_data_update();
 	void proc_data_search(unsigned long ip_num);
 	void proc_data_search_fail();
-	void proc_data_delete(unsigned long ip_num);
 
 	//request
-	void req_data_add();
+	void req_data_update();
 	void req_data_search(unsigned long ip_num);
 	void req_data_delete(unsigned long ip_num);
 
 	//peer
 	void peer_bf_add(unsigned long ip_num);
 	void peer_data_search(unsigned long ip_num);
-	void peer_data_delete(unsigned long ip_num);
 
 	//top
 	void top_bf_add(unsigned long ip_num);
 	void top_data_search();
-	void top_data_delete();
 
 private:
 

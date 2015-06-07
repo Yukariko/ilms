@@ -4,15 +4,13 @@
 #include "ilms.h"
 
 #define CMD_BF_ADD								0x00
-#define CMD_DATA_ADD							0x10
+#define CMD_DATA_UPDATE						0x10
 #define CMD_DATA_SEARCH						0x11
 #define CMD_DATA_SEARCH_FAIL			0x12
 #define CMD_DATA_SEARCH_DOWN			0x13
-#define CMD_DATA_DELETE						0x14
-#define CMD_DATA_DELETE_DOWN			0x15
 #define CMD_DATA_REPLACE					0x16
 
-#define REQ_DATA_ADD							0x20
+#define REQ_DATA_UPDATE						0x20
 #define REQ_DATA_SEARCH						0x21
 #define REQ_DATA_DELETE						0x22
 
@@ -20,12 +18,9 @@
 #define PEER_DATA_SEARCH					0x31
 #define PEER_DATA_SEARCH_FAIL			0x32
 #define PEER_DATA_SEARCH_DOWN			0x33
-#define PEER_DATA_DELETE					0x34
-#define PEER_DATA_DELETE_DOWN			0x35
 
 #define TOP_BF_ADD								0x40
 #define TOP_DATA_SEARCH						0x41
-#define TOP_DATA_DELETE						0x42
 
 #define MARK_UP										0x01
 #define MARK_DOWN									0x00
@@ -44,17 +39,17 @@
  * 테스트 해시 함수
  */
 
-long long test(long long data){return data*997*1499;}
-long long test2(long long data){return data*1009*1361;}
-long long test3(long long data){return data*1013*1327;}
-long long test4(long long data){return data*3*5;}
-long long test5(long long data){return data*7*11;}
-long long test6(long long data){return data*13*17;}
-long long test7(long long data){return data*23*29;}
-long long test8(long long data){return data*31*37;}
-long long test9(long long data){return data*41*43;}
-long long test10(long long data){return data*47*53;}
-long long test11(long long data){return data*59*61;}
+long long test(char *data){return (*(unsigned short *)(data + 0) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 0;}
+long long test2(char *data){return (*(unsigned short *)(data + 2) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 1;}
+long long test3(char *data){return (*(unsigned short *)(data + 4) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 2;}
+long long test4(char *data){return (*(unsigned short *)(data + 6) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 3;;}
+long long test5(char *data){return (*(unsigned short *)(data + 8) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 4;;}
+long long test6(char *data){return (*(unsigned short *)(data + 10) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 5;;}
+long long test7(char *data){return (*(unsigned short *)(data + 12) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 6;;}
+long long test8(char *data){return (*(unsigned short *)(data + 14) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 7;;}
+long long test9(char *data){return (*(unsigned short *)(data + 16) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 8;;}
+long long test10(char *data){return (*(unsigned short *)(data + 18) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 9;}
+long long test11(char *data){return (*(unsigned int *)(data + 20) * 1009LL);}
 
 
 /*
@@ -168,22 +163,19 @@ void Ilms::start()
 			switch(cmd)
 			{
 			case CMD_BF_ADD: proc_bf_add(ip_num); break;
-			case CMD_DATA_ADD: proc_data_add(); break;
+			case CMD_DATA_UPDATE: proc_data_update(); break;
 			case CMD_DATA_SEARCH: proc_data_search(ip_num); break;
 			case CMD_DATA_SEARCH_FAIL: proc_data_search_fail(); break;
-			case CMD_DATA_DELETE: proc_data_delete(ip_num); break;
 
-			case REQ_DATA_ADD: req_data_add(); break;
+			case REQ_DATA_UPDATE: req_data_update(); break;
 			case REQ_DATA_SEARCH: req_data_search(ip_num); break;
 			case REQ_DATA_DELETE: req_data_delete(ip_num); break;
 
 			case PEER_BF_ADD: peer_bf_add(ip_num); break;
 			case PEER_DATA_SEARCH: peer_data_search(ip_num); break;
-			case PEER_DATA_DELETE: peer_data_delete(ip_num); break;
 
 			case TOP_BF_ADD: top_bf_add(ip_num); break;
 			case TOP_DATA_SEARCH: top_data_search(); break;
-			case TOP_DATA_DELETE: top_data_search(); break;
 			}
 		}
 	}
