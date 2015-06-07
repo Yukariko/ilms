@@ -50,6 +50,20 @@ long long test9(char *data){return (*(unsigned short *)(data + 16) * 1009LL ) % 
 long long test10(char *data){return (*(unsigned short *)(data + 18) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 9;}
 long long test11(char *data){return (*(unsigned int *)(data + 20) * 1009LL);}
 
+std::vector<Node> Tree::child;
+std::vector<Node> Tree::down_peer;
+std::vector<Node> Tree::up_peer;
+
+Bloomfilter* Ilms::my_filter;
+Bloomfilter** Ilms::child_filter;
+Bloomfilter** Ilms::peer_filter;
+Scanner Ilms::sc;
+std::atomic<int> Ilms::global_counter;
+long long Ilms::bitArray[12];
+int Ilms::sock;
+struct sockaddr_in Ilms::serv_adr;
+
+
 
 /*
  * Ilms 생성자
