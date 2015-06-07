@@ -484,7 +484,7 @@ void Ilms::req_data_update()
 		{
 			ret += ":";
 			ret += value;
-			insert(data,DATA_SIZE,ret,ret.size());
+			insert(data,DATA_SIZE,ret.c_str(),ret.size());
 		}
 	}
 	else if(mode == DATA_DELETE)
@@ -573,7 +573,7 @@ void Ilms::req_data_delete(unsigned long ip_num)
 
 	if(my_filter->lookup(data))
 	{
-		remove(data, DATA_SIZE)
+		remove(data, DATA_SIZE);
 	}
 }
 
