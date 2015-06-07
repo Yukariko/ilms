@@ -34,4 +34,8 @@ protected:
 	static std::vector<Node> up_peer;
 };
 
+std::vector<Node> Tree::child;
+std::vector<Node> Tree::down_peer;
+std::vector<Node> Tree::up_peer;
+
 #endif
