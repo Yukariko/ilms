@@ -184,7 +184,7 @@ static void Ilms::send(unsigned long ip_num,const char *buf,int len)
 	clnt_adr.sin_addr.s_addr = ip_num;
 	clnt_adr.sin_port = htons(PORT);
 
-	sendto(sock, buf, len, 0, (struct sockaddr *)&clnt_adr, clnt_adr_sz);
+	sendto(Ilms::sock, buf, len, 0, (struct sockaddr *)&clnt_adr, clnt_adr_sz);
 
 	DEBUG("Send OK!");
 }
@@ -448,7 +448,7 @@ void Ilms::proc_data_search_fail()
 void Ilms::req_data_update()
 {
 	sc.buf[0] = CMD_DATA_UPDATE;
-	proc_data_add();
+	proc_data_update();
 }
 
 /*
