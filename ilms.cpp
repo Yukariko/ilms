@@ -172,7 +172,7 @@ void Ilms::start()
  * 버퍼 전송
  */
 
-void Ilms::send(unsigned long ip_num,const char *buf,int len)
+static void Ilms::send(unsigned long ip_num,const char *buf,int len)
 {
 	if(ip_num==0)
 		return;
@@ -189,7 +189,7 @@ void Ilms::send(unsigned long ip_num,const char *buf,int len)
 	DEBUG("Send OK!");
 }
 
-void Ilms::child_run(unsigned int i)
+static void Ilms::child_run(unsigned int i)
 {
 	if(child_filter[i]->lookBitArray(bitArray))
 	{
@@ -248,7 +248,7 @@ int Ilms::send_child(unsigned long ip_num, char *data)
 	return ret;
 }
 
-void Ilms::peer_run(unsigned int i)
+static void Ilms::peer_run(unsigned int i)
 {
 	if(peer_filter[i]->lookBitArray(bitArray))
 	{
@@ -266,7 +266,7 @@ int Ilms::send_peer(char *data)
 		global_counter = 0;
 
 		for(unsigned int j=0; j < range; j++, i++)
-			task[j] = std::thread(&(Ilms::child_run),this,i);
+			task[j] = std::thread(&(Ilms::peer_run),this,i);
 
 		for(unsigned int j=0; j < range; j++)
 		{

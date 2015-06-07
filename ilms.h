@@ -29,7 +29,7 @@ public:
 	~Ilms();
 
 	void start();
-	void send(unsigned long ip_num,const char *buf,int len);
+	static void send(unsigned long ip_num,const char *buf,int len);
 	int send_child(char *data);
 	int send_child(unsigned long ip_num, char *data);
 	int send_peer(char *data);
@@ -58,8 +58,8 @@ public:
 	void peer_data_search_down();
 	
 	//thread
-	void child_run(unsigned int i);
-	void peer_run(unsigned int i);
+	static void child_run(unsigned int i);
+	static void peer_run(unsigned int i);
 
 private:
 	leveldb::DB* db;
@@ -74,7 +74,7 @@ private:
 
 	std::atomic<int> global_counter;
 	std::thread task[NTHREAD];
-	long long bitArray[12];
+	static long long bitArray[12];
 	static int sock;
 	static struct sockaddr_in serv_adr;
 };
