@@ -63,6 +63,21 @@ long long test11(char *data){return (*(unsigned int *)(data + 20) * 1009LL);}
  * UDP 통신이며 포트는 7979
  */
 
+std::vector<Node> Tree::top;
+std::vector<Node> Tree::child;
+std::vector<Node> Tree::down_peer;
+std::vector<Node> Tree::up_peer;
+
+Bloomfilter* Ilms::my_filter;
+Bloomfilter** Ilms::child_filter;
+Bloomfilter** Ilms::top_filter;
+Bloomfilter** Ilms::peer_filter;
+Scanner Ilms::sc;
+std::atomic<int> Ilms::global_counter;
+long long Ilms::bitArray[12];
+int Ilms::sock;
+struct sockaddr_in Ilms::serv_adr;
+
 
 Ilms::Ilms()
 {
@@ -203,16 +218,33 @@ void Ilms::send(unsigned long ip_num,const char *buf,int len)
 	DEBUG("Send OK!");
 }
 
+void Ilms::child_run(unsigned int i)
+{
+	if(child_filter[i]->lookBitArray(bitArray))
+	{
+		Ilms::send(child[i].get_ip_num(), sc.buf, sc.len);
+		Ilms::global_counter++;
+	}
+}
+
 int Ilms::send_child(char *data)
 {
 	int ret = 0;
-	for(unsigned int i=0; i < child.size(); i++)
+	for(unsigned int i=0; i < child.size();)
 	{
-		if(child_filter[i]->lookup(data))
+		unsigned int range = std::min(NTHREAD, (unsigned int)child.size() - i);
+		global_counter = 0;
+
+		for(unsigned int j=0; j < range; j++, i++)
 		{
-			this->send(child[i].get_ip_num(), sc.buf, sc.len);
-			ret++;
+			task[j] = std::thread(&Ilms::child_run,this,i);
 		}
+
+		for(unsigned int j=0; j < range; j++)
+		{
+			task[j].join();
+		}
+		ret += global_counter;
 	}
 	return ret;
 }
@@ -220,38 +252,80 @@ int Ilms::send_child(char *data)
 int Ilms::send_child(unsigned long ip_num, char *data)
 {
 	int ret = 0;
-	for(unsigned int i=0; i < child.size(); i++)
+	for(unsigned int i=0; i < child.size();)
 	{
-		if(ip_num != child[i].get_ip_num() && child_filter[i]->lookup(data))
+		unsigned int range = std::min(NTHREAD, (unsigned int)child.size() - i);
+		global_counter = 0;
+
+		for(unsigned int j=0; j < range; j++, i++)
 		{
-			this->send(child[i].get_ip_num(), sc.buf, sc.len);
-			ret++;
+			if(ip_num == child[i].get_ip_num())
+			{
+				j--;
+				range--;
+				continue;
+			}
+			task[j] = std::thread(&Ilms::child_run,this,i);
 		}
+
+		for(unsigned int j=0; j < range; j++)
+		{
+			task[j].join();
+		}
+		ret += global_counter;
 	}
 	return ret;
+}
+
+void Ilms::peer_run(unsigned int i)
+{
+	if(peer_filter[i]->lookBitArray(bitArray))
+	{
+		Ilms::send(down_peer[i].get_ip_num(), sc.buf, sc.len);
+		Ilms::global_counter++;
+	}
 }
 
 int Ilms::send_peer(char *data)
 {
 	int ret = 0;
-	for(unsigned int i=0; i < down_peer.size(); i++)
+	for(unsigned int i=0; i < down_peer.size();)
 	{
-		if(peer_filter[i]->lookup(data))
+		unsigned int range = std::min(NTHREAD, (unsigned int)down_peer.size() - i);
+		global_counter = 0;
+
+		for(unsigned int j=0; j < range; j++, i++)
+			task[j] = std::thread(&Ilms::peer_run,this,i);
+
+		for(unsigned int j=0; j < range; j++)
 		{
-			this->send(down_peer[i].get_ip_num(), sc.buf, sc.len);
-			ret++;
+			task[j].join();
 		}
+		ret += global_counter;
 	}
 	return ret;
 }
 
+void Ilms::top_run(unsigned int i)
+{
+	if(top_filter[i]->lookBitArray(bitArray))
+	{
+		Ilms::send(top[i].get_ip_num(), sc.buf, sc.len);
+	}
+}
+
 void Ilms::send_top(char *data)
 {
-	for(unsigned int i=0; i < top.size(); i++)
+	for(unsigned int i=0; i < top.size();)
 	{
-		if(top_filter[i]->lookup(data))
+		unsigned int range = std::min(NTHREAD, (unsigned int)top.size() - i);
+
+		for(unsigned int j=0; j < range; j++, i++)
+			task[j] = std::thread(&Ilms::top_run,this,i);
+
+		for(unsigned int j=0; j < range; j++)
 		{
-			this->send(top[i].get_ip_num(), sc.buf, sc.len);
+			task[j].join();
 		}
 	}
 }
@@ -290,7 +364,7 @@ void Ilms::proc_bf_add(unsigned long ip_num)
  * 처음 노드일 경우만 해당하며, 부모에는 블룸필터 추가로 전송
  */
 
-void Ilms::proc_data_add()
+void Ilms::proc_data_update()
 {
 	char *data;
 	char *value;
@@ -326,7 +400,9 @@ void Ilms::proc_data_search(unsigned long ip_num)
 	if(!sc.next_value(ip_org_num))
 		return;
 
-	if(my_filter->lookup(data))
+
+	my_filter->getBitArray(bitArray,data);
+	if(my_filter->lookBitArray(bitArray))
 	{
 		std::string ret;
 		if(search(data,DATA_SIZE,ret))
@@ -408,74 +484,14 @@ void Ilms::proc_data_search_fail()
 }
 
 /*
- * 데이터 삭제
- * 데이터 검색 매커니즘에서 검색후 알림 대신 삭제
- */
-
-void Ilms::proc_data_delete(unsigned long ip_num)
-{
-	char *data;
-	unsigned long ip_org_num;
-
-	if(!sc.next_value(data,DATA_SIZE))
-		return;
-
-	if(!sc.next_value(ip_org_num))
-		return;
-
-	if(my_filter->lookup(data))
-	{
-		if(remove(data,DATA_SIZE))
-			return;
-	}
-
-	char *up_down;
-	if(!sc.next_value(up_down,1))
-		return;
-
-	char *p_depth;
-	if(!sc.next_value(p_depth,4))
-		return;
-
-	unsigned long depth = ntohl(*(unsigned long *)p_depth);
-
-	int count = 0;
-
-	*(unsigned long *)p_depth = htonl(depth+1);
-
-	if(*up_down == MARK_UP)
-	{
-		*up_down = MARK_DOWN;
-		count += send_child(ip_num,data);
-	}
-	else
-	{
-		count += send_child(data);
-	}
-
-	sc.buf[0] = PEER_DATA_DELETE;
-	count += send_peer(data);
-
-	if(count)
-	{
-		insert(data,DATA_SIZE+4, (char *)&count, sizeof(count));
-	}
-	else
-	{
-		sc.buf[0] = TOP_DATA_DELETE;		
-		send_top(data);
-	}
-}
-
-/*
  * 클라이언트로 부터의 데이터 추가 요청
  * 사실상 기존 프로토콜과 동일함
  */
 
-void Ilms::req_data_add()
+void Ilms::req_data_update()
 {
-	sc.buf[0] = CMD_DATA_ADD;
-	proc_data_add();
+	sc.buf[0] = CMD_DATA_UPDATE;
+	proc_data_update();
 }
 
 /*
@@ -505,7 +521,8 @@ void Ilms::req_data_search(unsigned long ip_num)
 
 	sc.len = pos - sc.buf;
 
-	if(my_filter->lookup(data))
+	my_filter->getBitArray(bitArray,data);
+	if(my_filter->lookBitArray(bitArray))
 	{
 		std::string ret;
 		if(search(data,DATA_SIZE,ret))
@@ -573,27 +590,6 @@ void Ilms::req_data_delete(unsigned long ip_num)
 			return;
 		}
 	}
-
-	up_down = MARK_DOWN;
-	*(unsigned long *)p_depth = htonl(1);
-
-	int count = 0;
-
-	sc.buf[0] = PEER_DATA_DELETE;
-	count += send_peer(data);
-
-	sc.buf[0] = CMD_DATA_DELETE;
-	count += send_child(data);
-
-	if(count)
-	{
-		insert(data,DATA_SIZE+4, (char *)&count, sizeof(count));
-	}
-	else
-	{
-		sc.buf[0] = TOP_DATA_SEARCH;
-		send_top(data);
-	}
 }
 
 void Ilms::peer_bf_add(unsigned long ip_num)
@@ -643,33 +639,6 @@ void Ilms::peer_data_search(unsigned long ip_num)
 	this->send(ip_num, sc.buf, sc.len);
 }
 
-void Ilms::peer_data_delete(unsigned long ip_num)
-{
-	char *data;
-	unsigned long ip_org_num;
-
-	if(!sc.next_value(data,DATA_SIZE))
-		return;
-
-	if(!sc.next_value(ip_org_num))
-		return;
-
-	if(my_filter->lookup(data))
-	{
-		if(remove(data,DATA_SIZE))
-			return;
-	}
-
-	char *up_down;
-	if(!sc.next_value(up_down,1))
-		return;
-
-	sc.buf[sc.len++] = CMD_DATA_DELETE;
-	sc.buf[0] = CMD_DATA_SEARCH_FAIL;
-	*up_down = MARK_UP;
-	this->send(ip_num, sc.buf, sc.len);
-}
-
 void Ilms::top_bf_add(unsigned long ip_num)
 {
 	char *data;
@@ -705,32 +674,6 @@ void Ilms::top_data_search()
 			this->send(ip_org_num, ret.c_str(), ret.length());
 			return;
 		}
-	}
-
-	sc.len = sc.get_cur() - sc.buf;
-
-	sc.buf[0] = CMD_DATA_SEARCH_DOWN;
-	send_child(data);
-
-	sc.buf[0] = PEER_DATA_SEARCH_DOWN;
-	send_peer(data);
-}
-
-void Ilms::top_data_delete()
-{
-	char *data;
-	unsigned long ip_org_num;
-
-	if(!sc.next_value(data,DATA_SIZE))
-		return;
-
-	if(!sc.next_value(ip_org_num))
-		return;
-
-	if(my_filter->lookup(data))
-	{
-		if(remove(data,DATA_SIZE))
-			return;
 	}
 
 	sc.len = sc.get_cur() - sc.buf;

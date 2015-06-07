@@ -5,6 +5,9 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <iostream>
+#include <algorithm>
+#include <thread>
+#include <atomic>
 
 #include <leveldb/db.h>
 #include <leveldb/write_batch.h>
@@ -16,7 +19,8 @@
 #define BUF_SIZE 256
 #define PORT 7979
 
-#define DATA_SIZE 8
+#define NTHREAD 64U
+#define DATA_SIZE 24
 
 #define DB_PATH "./db"
 
@@ -27,7 +31,7 @@ public:
 	~Ilms();
 
 	void start();
-	void send(unsigned long ip_num,const char *buf,int len);
+	static void send(unsigned long ip_num,const char *buf,int len);
 	int send_child(char *data);
 	int send_child(unsigned long ip_num, char *data);
 	int send_peer(char *data);
@@ -58,21 +62,28 @@ public:
 	void top_bf_add(unsigned long ip_num);
 	void top_data_search();
 
+	//thread
+	void top_run(unsigned int i);
+	void child_run(unsigned int i);
+	void peer_run(unsigned int i);
+
 private:
 
 	leveldb::DB* db;
 	leveldb::Options options;
 
 
-	Bloomfilter *my_filter;
-	Bloomfilter **child_filter;
-	Bloomfilter **top_filter;
-	Bloomfilter **peer_filter;
+	static Bloomfilter *my_filter;
+	static Bloomfilter **child_filter;
+	static Bloomfilter **top_filter;
+	static Bloomfilter **peer_filter;
 
-	Scanner sc;
-
-	int sock;
-	struct sockaddr_in serv_adr;
+	static Scanner sc;
+	static std::atomic<int> global_counter;
+	std::thread task[NTHREAD];
+	static long long bitArray[12];
+	static int sock;
+	static struct sockaddr_in serv_adr;
 };
 
 #endif

@@ -277,7 +277,7 @@ int Ilms::send_peer(char *data)
 	int ret = 0;
 	for(unsigned int i=0; i < down_peer.size();)
 	{
-		unsigned int range = std::min(NTHREAD, (unsigned int)child.size() - i);
+		unsigned int range = std::min(NTHREAD, (unsigned int)down_peer.size() - i);
 		global_counter = 0;
 
 		for(unsigned int j=0; j < range; j++, i++)
