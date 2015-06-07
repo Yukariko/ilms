@@ -192,7 +192,7 @@ static void Ilms::send(unsigned long ip_num,const char *buf,int len)
 
 static void Ilms::child_run(unsigned int i)
 {
-	if(child_filter[i]->lookBitArray(bitArray))
+	//if(child_filter[i]->lookBitArray(bitArray))
 	{
 		//Ilms::send(child[i].get_ip_num(), sc.buf, sc.len);
 		global_counter++;
@@ -251,7 +251,7 @@ int Ilms::send_child(unsigned long ip_num, char *data)
 
 static void Ilms::peer_run(unsigned int i)
 {
-	if(peer_filter[i]->lookBitArray(bitArray))
+	//if(peer_filter[i]->lookBitArray(bitArray))
 	{
 		//Ilms::send(down_peer[i].get_ip_num(), sc.buf, sc.len);
 		global_counter++;
