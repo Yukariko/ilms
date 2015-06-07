@@ -70,13 +70,13 @@ private:
 	static Bloomfilter **child_filter;
 	static Bloomfilter **peer_filter;
 
-	Scanner sc;
+	static Scanner sc;
 
 	std::atomic<int> global_counter;
 	std::thread task[NTHREAD];
 	long long bitArray[12];
-	int sock;
-	struct sockaddr_in serv_adr;
+	static int sock;
+	static struct sockaddr_in serv_adr;
 };
 
 #endif
