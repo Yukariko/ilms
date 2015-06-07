@@ -2,7 +2,7 @@
 
 #include "ilmscli.h"
 
-#define REQ_DATA_ADD							0x20
+#define REQ_DATA_UPDATE							0x20
 #define REQ_DATA_SEARCH						0x21
 #define REQ_DATA_DELETE						0x22
 
@@ -43,15 +43,15 @@ void IlmsCli::setIp(std::string ip)
  * 데이터 추가 요청
  */
 
-void IlmsCli::req_data_add(long long data,std::string ip)
+void IlmsCli::req_data_add(char *data,std::string ip)
 {
 	char header[256];
 	int len=0;
 
 	header[len++] = REQ_DATA_ADD;
-	*(long long *)(header+len) = data;
-	len += 8;
-
+	for(int i=0; i < 24; i++)
+		header[len++] = data[i];
+	
 	header[len] = ip.length() + 1;
 	strcpy(header+len+1,ip.c_str());
 
@@ -65,15 +65,15 @@ void IlmsCli::req_data_add(long long data,std::string ip)
  * 검색 결과를 받을때까지 기다림 
  */
 
-int IlmsCli::req_data_search(long long data, char *buf)
+int IlmsCli::req_data_search(char *data, char *buf)
 {
 	char header[BUF_SIZE];
 	int len=0;
 	
 	header[len++] = REQ_DATA_SEARCH;
+	for(int i=0; i < 24; i++)
+		header[len++] = data[i];
 	
-	*(long long *)(header+len) = data;
-	len += 8;
 
 	this->send(header,len);
 	return this->recieve(buf);
@@ -83,15 +83,15 @@ int IlmsCli::req_data_search(long long data, char *buf)
  * 데이터 삭제 요청
  */
 
-void IlmsCli::req_data_delete(long long data)
+void IlmsCli::req_data_delete(char *data)
 {
 	char header[BUF_SIZE];
 	int len=0;
 
 	header[len++] = REQ_DATA_DELETE;
+	for(int i=0; i < 24; i++)
+		header[len++] = data[i];
 
-	*(long long *)(header+len) = data;
-	len += 8;
 
 	this->send(header,len);
 }

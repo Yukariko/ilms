@@ -11,7 +11,7 @@ int main()
 	while(scanf("%s",cmd) == 1)
 	{
 		char value[BUF_SIZE];
-		long long data;
+		char data[BUF_SIZE];
 		if(strcmp(cmd, "IP") == 0)
 		{	
 			if(scanf("%s",value) != 1)
@@ -24,7 +24,7 @@ int main()
 
 		else if(strcmp(cmd, "SET") == 0)
 		{
-			if(scanf("%lld %s",&data,value) != 2)
+			if(scanf("%s%s",data,value) != 2)
 			{
 				std::cout << "ERROR" << std::endl;
 				exit(1);
@@ -36,7 +36,7 @@ int main()
 		else if(strcmp(cmd, "GET") == 0)
 		{
 			char buf[BUF_SIZE];
-			if(scanf("%lld",&data) != 1)
+			if(scanf("%s",data) != 1)
 			{
 				std::cout << "ERROR" << std::endl;
 				exit(1);
@@ -49,7 +49,7 @@ int main()
 
 		else if(strcmp(cmd, "DELETE") == 0)
 		{
-			if(scanf("%lld",&data) != 1)
+			if(scanf("%s",data) != 1)
 			{
 				std::cout << "ERROR" << std::endl;
 				exit(1);
