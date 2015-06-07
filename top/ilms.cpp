@@ -701,7 +701,7 @@ void Ilms::top_data_search()
  * key, value 쌍으로 입력
  */
 
-void Ilms::insert(char *key,int klen, char *val,int vlen)
+void Ilms::insert(char *key,int klen,const char *val,int vlen)
 {
 	leveldb::Status s = db->Put(leveldb::WriteOptions(),leveldb::Slice(key,klen),leveldb::Slice(val,vlen));
 	assert(s.ok());

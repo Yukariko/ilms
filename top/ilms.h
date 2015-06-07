@@ -38,7 +38,7 @@ public:
 	void send_top(char *data);
 
 	//data
-	void insert(char *key,int klen,char *val,int vlen);
+	void insert(char *key,int klen,const char *val,int vlen);
 	bool search(char *key,int klen,std::string &val);
 	bool remove(char *key,int klen);
 
