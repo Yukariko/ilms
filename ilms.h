@@ -1,12 +1,13 @@
 #ifndef ILMS_H
 #define ILMS_H
 
-#include <pthread.h>
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <iostream>
 #include <algorithm>
+#include <thread>
+#include <atomic>
 
 #include <leveldb/db.h>
 #include <leveldb/write_batch.h>
@@ -57,8 +58,8 @@ public:
 	void peer_data_search_down();
 	
 	//thread
-	void *child_run(void *arg);
-	void *peer_run(void *arg);
+	void child_run(unsigned int i);
+	void peer_run(unsigned int i);
 
 private:
 	leveldb::DB* db;
@@ -71,7 +72,8 @@ private:
 
 	Scanner sc;
 
-	pthread_t thread[NTHREAD];
+	std::atomic<int> global_counter(0);
+	std::thread task[NTHREAD];
 	long long bitArray[12];
 	int sock;
 	struct sockaddr_in serv_adr;

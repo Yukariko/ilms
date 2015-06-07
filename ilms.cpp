@@ -189,15 +189,13 @@ void Ilms::send(unsigned long ip_num,const char *buf,int len)
 	DEBUG("Send OK!");
 }
 
-void *Ilms::child_run(void *arg)
+void Ilms::child_run(unsigned int i)
 {
-	unsigned int i = *(unsigned int *)arg;
 	if(child_filter[i]->lookBitArray(bitArray))
 	{
 		this->send(child[i].get_ip_num(), sc.buf, sc.len);
-		return (void *)1;
+		global_counter++;
 	}
-	return 0;
 }
 
 int Ilms::send_child(char *data)
@@ -206,17 +204,18 @@ int Ilms::send_child(char *data)
 	for(unsigned int i=0; i < child.size();)
 	{
 		unsigned int range = std::min(NTHREAD, (unsigned int)child.size() - i);
+		global_counter = 0;
 
 		for(unsigned int j=0; j < range; j++, i++)
-			pthread_create(&thread[j],0,child_run,(void *)i);
+		{
+			task[j] = std::thread(&(Ilms::child_run),this,i);
+		}
 
 		for(unsigned int j=0; j < range; j++)
 		{
-			void *t;
-			pthread_join(thread[j],&t);
-			if(t == (void *)1)
-				ret++;
+			task[j].join();
 		}
+		ret += global_counter;
 	}
 	return ret;
 }
@@ -227,33 +226,35 @@ int Ilms::send_child(unsigned long ip_num, char *data)
 	for(unsigned int i=0; i < child.size();)
 	{
 		unsigned int range = std::min(NTHREAD, (unsigned int)child.size() - i);
+		global_counter = 0;
 
 		for(unsigned int j=0; j < range; j++, i++)
 		{
-			if(ip_num != child[i].get_ip_num())
-				pthread_create(&thread[j],0,child_run,(void *)i);
+			if(ip_num == child[i].get_ip_num())
+			{
+				j--;
+				range--;
+				continue;
+			}
+			task[j] = std::thread(&(Ilms::child_run),this,i);
 		}
 
 		for(unsigned int j=0; j < range; j++)
 		{
-			void *t;
-			pthread_join(thread[j],&t);
-			if(t == (void *)1)
-				ret++;
+			task[j].join();
 		}
+		ret += global_counter;
 	}
 	return ret;
 }
 
-void *Ilms::peer_run(void *arg)
+void Ilms::peer_run(unsigned int i)
 {
-	unsigned int i = *(unsigned int *)arg;
 	if(peer_filter[i]->lookBitArray(bitArray))
 	{
 		this->send(down_peer[i].get_ip_num(), sc.buf, sc.len);
-		return (void *)1;
+		global_counter++;
 	}
-	return 0;
 }
 
 int Ilms::send_peer(char *data)
@@ -262,17 +263,16 @@ int Ilms::send_peer(char *data)
 	for(unsigned int i=0; i < down_peer.size();)
 	{
 		unsigned int range = std::min(NTHREAD, (unsigned int)child.size() - i);
+		global_counter = 0;
 
 		for(unsigned int j=0; j < range; j++, i++)
-			pthread_create(&thread[j],0,peer_run,(void *)i);
+			task[j] = std::thread(&(Ilms::child_run),this,i);
 
 		for(unsigned int j=0; j < range; j++)
 		{
-			void *t;
-			pthread_join(thread[j],&t);
-			if(t == (void *)1)
-				ret++;
+			task[j].join();
 		}
+		ret += global_counter;
 	}
 	return ret;
 }
