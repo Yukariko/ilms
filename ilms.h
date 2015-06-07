@@ -66,9 +66,9 @@ private:
 	leveldb::Options options;
 
 
-	Bloomfilter *my_filter;
-	Bloomfilter **child_filter;
-	Bloomfilter **peer_filter;
+	static Bloomfilter *my_filter;
+	static Bloomfilter **child_filter;
+	static Bloomfilter **peer_filter;
 
 	Scanner sc;
 

@@ -29,9 +29,9 @@ protected:
 	void error_handling(const char *message);
 
 	Node *parent;
-	std::vector<Node> child;
-	std::vector<Node> down_peer;
-	std::vector<Node> up_peer;
+	static std::vector<Node> child;
+	static std::vector<Node> down_peer;
+	static std::vector<Node> up_peer;
 };
 
 #endif
