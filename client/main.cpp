@@ -24,7 +24,7 @@ int main()
 
 		else if(strcmp(cmd, "REG") == 0)
 		{
-			if(scanf("%s",data) != 2)
+			if(scanf("%s",data) != 1)
 			{
 				std::cout << "ERROR" << std::endl;
 				exit(1);
