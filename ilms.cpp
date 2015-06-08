@@ -118,10 +118,10 @@ Ilms::Ilms()
 	assert(status.ok());
 
 	// test
-	this->test();
+	test_process();
 }
 
-void Ilms::test()
+void Ilms::test_process()
 {
 	char data[BUF_SIZE];
 	for(unsigned int i=0;i<child.size();i++)

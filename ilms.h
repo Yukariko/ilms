@@ -62,7 +62,7 @@ public:
 	void peer_run(unsigned int i);
 
 	//test
-	void test();
+	void test_process();
 
 private:
 	leveldb::DB* db;
