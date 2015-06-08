@@ -10,8 +10,8 @@ int main()
 	IlmsCli ilms("0");
 	while(scanf("%s",cmd) == 1)
 	{
-		char value[BUF_SIZE];
-		char data[BUF_SIZE];
+		char value[BUF_SIZE] = {};
+		char data[BUF_SIZE] = {};
 		if(strcmp(cmd, "IP") == 0)
 		{	
 			if(scanf("%s",value) != 1)
@@ -24,7 +24,7 @@ int main()
 
 		else if(strcmp(cmd, "REG") == 0)
 		{
-			if(scanf("%s%s",data,value) != 2)
+			if(scanf("%s",data) != 2)
 			{
 				std::cout << "ERROR" << std::endl;
 				exit(1);
