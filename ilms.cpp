@@ -446,7 +446,7 @@ void Ilms::req_data_register()
 		return;
 
 	my_filter->insert(data);
-	insert(data,DATA_SIZE,value,*(unsigned char *)(value-1));
+	insert(data,DATA_SIZE,value,0);
 
 	sc.buf[0] = CMD_BF_ADD;
 	this->send(parent->get_ip_num(), sc.buf, sc.len);
@@ -489,7 +489,26 @@ void Ilms::req_data_update()
 	}
 	else if(mode == DATA_DELETE)
 	{
-
+		std::string ret;
+		if(search(data,DATA_SIZE,ret))
+		{
+			char res[BUF_SIZE];
+			int len = 0;
+			for(unsigned int i=0;i < ret.size(); i++)
+			{
+				if(ret[i] == ':')
+				{
+					if(strncmp(ret.c_str()+i+1,value,*(unsigned char *)(value-1)-1) == 0)
+					{
+						i += *(unsigned char *)(value-1)-1;
+						continue;
+					}
+				}
+				res[len++] = ret[i];
+			}
+			res[len] = 0;
+			insert(data,DATA_SIZE,res,len);
+		}
 	}
 	else if(mode == DATA_REPLACE)
 	{
