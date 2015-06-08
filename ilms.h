@@ -61,6 +61,9 @@ public:
 	void child_run(unsigned int i);
 	void peer_run(unsigned int i);
 
+	//test
+	void test();
+
 private:
 	leveldb::DB* db;
 	leveldb::Options options;
