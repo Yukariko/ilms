@@ -118,7 +118,7 @@ Ilms::Ilms()
 	assert(status.ok());
 
 	// test
-	test();
+	this->test();
 }
 
 void Ilms::test()
