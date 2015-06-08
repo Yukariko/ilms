@@ -389,7 +389,7 @@ void Ilms::proc_data_search(unsigned long ip_num)
 		std::string ret;
 		if(search(data,DATA_SIZE,ret))
 		{
-			this->send(ip_org_num, ret.c_str(), ret.length());
+			this->send(ip_org_num, ret.c_str(), ret.length() + 1);
 			return;
 		}
 	}
@@ -577,7 +577,7 @@ void Ilms::req_data_search(unsigned long ip_num)
 		std::string ret;
 		if(search(data,DATA_SIZE,ret))
 		{
-			this->send(ip_num, ret.c_str(), ret.length());
+			this->send(ip_num, ret.c_str(), ret.length() + 1);
 			return;
 		}
 	}
@@ -654,7 +654,7 @@ void Ilms::peer_data_search(unsigned long ip_num)
 		std::string ret;
 		if(search(data,DATA_SIZE,ret))
 		{
-			this->send(ip_org_num, ret.c_str(), ret.length());
+			this->send(ip_org_num, ret.c_str(), ret.length() + 1);
 			return;
 		}
 	}
@@ -701,7 +701,7 @@ void Ilms::top_data_search()
 		std::string ret;
 		if(search(data,DATA_SIZE,ret))
 		{
-			this->send(ip_org_num, ret.c_str(), ret.length());
+			this->send(ip_org_num, ret.c_str(), ret.length() + 1);
 			return;
 		}
 	}
