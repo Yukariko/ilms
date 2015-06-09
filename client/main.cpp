@@ -65,10 +65,7 @@ int main()
 				std::cout << "ERROR" << std::endl;
 				exit(1);
 			}
-			int len = ilms.req_data_update(2,data,value);
-
-			if(len > 0)
-				std::cout << buf << std::endl;
+			ilms.req_data_update(2,data,value);
 		}
 
 		else if(strcmp(cmd, "SUB") == 0)
