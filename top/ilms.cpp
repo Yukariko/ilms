@@ -129,8 +129,28 @@ Ilms::Ilms()
 	leveldb::Status status = leveldb::DB::Open(options, DB_PATH, &db);
 	assert(status.ok());
 
+	// test
+	test_process();
 }
 
+void Ilms::test_process()
+{
+	char data[BUF_SIZE];
+	for(unsigned int i=0;i<child.size();i++)
+	{
+		if(child[i].get_ip_num() == 0)
+		{
+			for(int j=0;j<1000;j++)
+			{
+				for(int k=0;k<24;k+=2)
+				{
+					*(unsigned short *)(data+k) = (unsigned short)rand();
+				}
+				child_filter[i]->insert(data);
+			}
+		}
+	}
+}
 /*
  * Ilms 소멸자
  * 할당 해제

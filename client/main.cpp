@@ -58,6 +58,19 @@ int main()
 				std::cout << buf << std::endl;
 		}
 
+		else if(strcmp(cmd, "REP") == 0)
+		{
+			if(scanf("%s%s",data,value) != 2)
+			{
+				std::cout << "ERROR" << std::endl;
+				exit(1);
+			}
+			int len = ilms.req_data_update(2,data,value);
+
+			if(len > 0)
+				std::cout << buf << std::endl;
+		}
+
 		else if(strcmp(cmd, "SUB") == 0)
 		{
 			if(scanf("%s%s",data,value) != 2)
