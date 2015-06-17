@@ -7,7 +7,6 @@
 #define CMD_DATA_SEARCH						0x10
 #define CMD_DATA_SEARCH_FAIL			0x11
 #define CMD_DATA_SEARCH_DOWN			0x12
-#define CMD_DATA_REPLACE					0x13
 
 #define REQ_DATA_REGISTER					0x20
 #define REQ_DATA_UPDATE						0x21
