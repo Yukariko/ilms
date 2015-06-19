@@ -33,7 +33,7 @@ public:
 	int send_child(char *data);
 	int send_child(unsigned long ip_num, char *data);
 	int send_peer(char *data);
-	void send_id(unsigned long ip_num, const char *buf, int len);
+	void send_id(unsigned long ip_num, char *id, const char *buf, int len);
 
 	//data
 	void insert(char *key,int klen,const char *val,int vlen);

@@ -353,12 +353,12 @@ void Ilms::send_top(char *data)
 	}
 }
 
-void Ilms::send_id(unsigned long ip_num, const char *ret, int len)
+void Ilms::send_id(unsigned long ip_num, char *id, const char *ret, int len)
 {
 	char buf[BUF_SIZE];
 	int pos = 0;
 	for(int i=0;i<DATA_SIZE;i++)
-		buf[pos++] = data[i];
+		buf[pos++] = id[i];
 	int count = 0;
 	for(int i=0; i < len; i++)
 		if(ret[i] == ':')
@@ -424,7 +424,7 @@ void Ilms::proc_lookup(unsigned long ip_num)
 		std::string ret;
 		if(search(data,DATA_SIZE,ret))
 		{
-			send_id(ip_org_num,ret.c_str(),ret.length());
+			send_id(ip_org_num,data,ret.c_str(),ret.length());
 			return;
 		}
 	}
@@ -612,7 +612,7 @@ void Ilms::req_lookup(unsigned long ip_num)
 		std::string ret;
 		if(search(data,DATA_SIZE,ret))
 		{
-			send_id(ip_org_num,ret.c_str(),ret.length());
+			send_id(ip_num,data,ret.c_str(),ret.length());
 			return;
 		}
 	}
@@ -689,7 +689,7 @@ void Ilms::peer_lookup(unsigned long ip_num)
 		std::string ret;
 		if(search(data,DATA_SIZE,ret))
 		{
-			send_id(ip_org_num,ret.c_str(),ret.length());
+			send_id(ip_org_num,data,ret.c_str(),ret.length());
 			return;
 		}
 	}
@@ -736,7 +736,7 @@ void Ilms::top_lookup()
 		std::string ret;
 		if(search(data,DATA_SIZE,ret))
 		{
-			send_id(ip_org_num,ret.c_str(),ret.length());
+			send_id(ip_org_num,data,ret.c_str(),ret.length());
 			return;
 		}
 	}
