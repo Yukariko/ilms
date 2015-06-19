@@ -353,6 +353,22 @@ void Ilms::send_top(char *data)
 	}
 }
 
+void Ilms::send_id(unsigned long ip_num, const char *ret, int len)
+{
+	char buf[BUF_SIZE];
+	int pos = 0;
+	for(int i=0;i<DATA_SIZE;i++)
+		buf[pos++] = data[i];
+	int count = 0;
+	for(int i=0; i < len; i++)
+		if(ret[i] == ':')
+			count++;
+	buf[pos++] = count;
+	strncpy(buf+pos,ret,len);
+	pos += len;
+	this->send(ip_num, buf, pos);
+}
+
 /*
  * 블룸필터 데이터 추가
  * 부모노드에도 추가해야 하므로 버퍼그대로 전송
@@ -408,7 +424,7 @@ void Ilms::proc_lookup(unsigned long ip_num)
 		std::string ret;
 		if(search(data,DATA_SIZE,ret))
 		{
-			this->send(ip_org_num, ret.c_str(), ret.length() + 1);
+			send_id(ip_org_num,ret.c_str(),ret.length());
 			return;
 		}
 	}
@@ -596,7 +612,7 @@ void Ilms::req_lookup(unsigned long ip_num)
 		std::string ret;
 		if(search(data,DATA_SIZE,ret))
 		{
-			this->send(ip_num, ret.c_str(), ret.length() + 1);
+			send_id(ip_org_num,ret.c_str(),ret.length());
 			return;
 		}
 	}
@@ -673,7 +689,7 @@ void Ilms::peer_lookup(unsigned long ip_num)
 		std::string ret;
 		if(search(data,DATA_SIZE,ret))
 		{
-			this->send(ip_org_num, ret.c_str(), ret.length() + 1);
+			send_id(ip_org_num,ret.c_str(),ret.length());
 			return;
 		}
 	}
@@ -720,7 +736,7 @@ void Ilms::top_lookup()
 		std::string ret;
 		if(search(data,DATA_SIZE,ret))
 		{
-			this->send(ip_org_num, ret.c_str(), ret.length() + 1);
+			send_id(ip_org_num,ret.c_str(),ret.length());
 			return;
 		}
 	}

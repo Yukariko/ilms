@@ -10,7 +10,7 @@
 
 #define REQ_ID_REGISTER					0x20
 #define REQ_LOC_UPDATE						0x21
-#define REQ_LOC_SEARCH						0x22
+#define REQ_LOOKUP						0x22
 #define REQ_ID_DEREGISTER						0x23
 
 #define PEER_BF_UPDATE								0x30
@@ -195,7 +195,7 @@ void Ilms::start()
 
 			case REQ_ID_REGISTER: req_id_register(); break;
 			case REQ_LOC_UPDATE: req_loc_update(); break;
-			case REQ_LOC_SEARCH: req_loc_search(ip_num); break;
+			case REQ_LOOKUP: req_lookup(ip_num); break;
 			case REQ_ID_DEREGISTER: req_id_deregister(ip_num); break;
 
 			case PEER_BF_UPDATE: peer_bf_update(ip_num); break;
@@ -316,6 +316,22 @@ int Ilms::send_peer(char *data)
 	return ret;
 }
 
+void Ilms::send_id(unsigned long ip_num, const char *ret, int len)
+{
+	char buf[BUF_SIZE];
+	int pos = 0;
+	for(int i=0;i<DATA_SIZE;i++)
+		buf[pos++] = data[i];
+	int count = 0;
+	for(int i=0; i < len; i++)
+		if(ret[i] == ':')
+			count++;
+	buf[pos++] = count;
+	strncpy(buf+pos,ret,len);
+	pos += len;
+	this->send(ip_num, buf, pos);
+}
+
 /*
  * 블룸필터 데이터 추가
  * 부모노드에도 추가해야 하므로 버퍼그대로 전송
@@ -366,7 +382,7 @@ void Ilms::proc_lookup(unsigned long ip_num)
 		std::string ret;
 		if(search(data,DATA_SIZE,ret))
 		{
-			this->send(ip_org_num, ret.c_str(), ret.length()+1);
+			send_id(ip_org_num,ret.c_str(),ret.length());
 			return;
 		}
 	}
@@ -541,7 +557,7 @@ void Ilms::req_loc_update()
  * 클라이언트는 자식이 아니므로 자식관련 처리과정이 생략됨
  */
 
-void Ilms::req_loc_search(unsigned long ip_num)
+void Ilms::req_lookup(unsigned long ip_num)
 {
 	char *data;
 
@@ -570,7 +586,7 @@ void Ilms::req_loc_search(unsigned long ip_num)
 		std::string ret;
 		if(search(data,DATA_SIZE,ret))
 		{
-			this->send(ip_num, ret.c_str(), ret.length()+1);
+			send_id(ip_org_num,ret.c_str(),ret.length());
 			return;
 		}
 	}
@@ -648,7 +664,7 @@ void Ilms::peer_lookup(unsigned long ip_num)
 		std::string ret;
 		if(search(data,DATA_SIZE,ret))
 		{
-			this->send(ip_org_num, ret.c_str(), ret.length()+1);
+			send_id(ip_org_num,ret.c_str(),ret.length());
 			return;
 		}
 	}
@@ -680,7 +696,7 @@ void Ilms::proc_lookup_down()
 		std::string ret;
 		if(search(data,DATA_SIZE,ret))
 		{
-			this->send(ip_org_num, ret.c_str(), ret.length()+1);
+			send_id(ip_org_num,ret.c_str(),ret.length());
 			return;
 		}
 	}
@@ -705,7 +721,7 @@ void Ilms::peer_lookup_down()
 		std::string ret;
 		if(search(data,DATA_SIZE,ret))
 		{
-			this->send(ip_org_num, ret.c_str(), ret.length()+1);
+			send_id(ip_org_num,ret.c_str(),ret.length());
 			return;
 		}
 	}
