@@ -18,10 +18,10 @@ public:
 	void setIp(std::string ip);
 
 
-	void req_data_register(char *data,std::string ip);
-	void req_data_update(char mode, char *data,std::string ip);
-	void req_data_delete(char *data);
-	int req_data_search(char *data,char *buf);
+	void req_id_register(char *data,std::string ip);
+	void req_loc_update(char mode, char *data,std::string ip);
+	void req_id_deregister(char *data);
+	int req_lookup(char *data,char *buf);
 
 
 	void send(const char *buf,int len);

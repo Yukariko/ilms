@@ -3,20 +3,20 @@
 #include <cstdlib>
 #include "ilms.h"
 
-#define CMD_BF_ADD								0x00
-#define CMD_DATA_SEARCH						0x10
-#define CMD_DATA_SEARCH_FAIL			0x11
-#define CMD_DATA_SEARCH_DOWN			0x12
+#define CMD_BF_UPDATE								0x00
+#define CMD_LOOKUP						0x10
+#define CMD_LOOKUP_NACK			0x11
+#define CMD_LOOKUP_DOWN			0x12
 
-#define REQ_DATA_REGISTER					0x20
-#define REQ_DATA_UPDATE						0x21
-#define REQ_DATA_SEARCH						0x22
-#define REQ_DATA_DELETE						0x23
+#define REQ_ID_REGISTER					0x20
+#define REQ_LOC_UPDATE						0x21
+#define REQ_LOC_SEARCH						0x22
+#define REQ_ID_DEREGISTER						0x23
 
-#define PEER_BF_ADD								0x30
-#define PEER_DATA_SEARCH					0x31
-#define PEER_DATA_SEARCH_FAIL			0x32
-#define PEER_DATA_SEARCH_DOWN			0x33
+#define PEER_BF_UPDATE								0x30
+#define PEER_LOOKUP					0x31
+#define PEER_LOOKUP_NACK			0x32
+#define PEER_LOOKUP_DOWN			0x33
 
 #define DATA_ADD									0x00
 #define DATA_DELETE								0x01
@@ -188,19 +188,19 @@ void Ilms::start()
 
 			switch(cmd)
 			{
-			case CMD_BF_ADD: proc_bf_add(ip_num); break;
-			case CMD_DATA_SEARCH: proc_data_search(ip_num); break;
-			case CMD_DATA_SEARCH_FAIL: proc_data_search_fail(); break;
-			case CMD_DATA_SEARCH_DOWN: proc_data_search_down(); break;
+			case CMD_BF_UPDATE: proc_bf_update(ip_num); break;
+			case CMD_LOOKUP: proc_lookup(ip_num); break;
+			case CMD_LOOKUP_NACK: proc_lookup_nack(); break;
+			case CMD_LOOKUP_DOWN: proc_lookup_down(); break;
 
-			case REQ_DATA_REGISTER: req_data_register(); break;
-			case REQ_DATA_UPDATE: req_data_update(); break;
-			case REQ_DATA_SEARCH: req_data_search(ip_num); break;
-			case REQ_DATA_DELETE: req_data_delete(ip_num); break;
+			case REQ_ID_REGISTER: req_id_register(); break;
+			case REQ_LOC_UPDATE: req_loc_update(); break;
+			case REQ_LOC_SEARCH: req_loc_search(ip_num); break;
+			case REQ_ID_DEREGISTER: req_id_deregister(ip_num); break;
 
-			case PEER_BF_ADD: peer_bf_add(ip_num); break;
-			case PEER_DATA_SEARCH: peer_data_search(ip_num); break;
-			case PEER_DATA_SEARCH_DOWN: peer_data_search_down(); break;
+			case PEER_BF_UPDATE: peer_bf_update(ip_num); break;
+			case PEER_LOOKUP: peer_lookup(ip_num); break;
+			case PEER_LOOKUP_DOWN: peer_lookup_down(); break;
 			}
 		}
 	}
@@ -321,7 +321,7 @@ int Ilms::send_peer(char *data)
  * 부모노드에도 추가해야 하므로 버퍼그대로 전송
  */
 
-void Ilms::proc_bf_add(unsigned long ip_num)
+void Ilms::proc_bf_update(unsigned long ip_num)
 {
 	char *data;
 	if(!sc.next_value(data,DATA_SIZE))
@@ -349,7 +349,7 @@ void Ilms::proc_bf_add(unsigned long ip_num)
  * 3) 자식필터에 데이터가 없다면 부모노드로 올라감. 부모노드에서 내려온 상태라면 부모에 검색 실패 전송 
  */
 
-void Ilms::proc_data_search(unsigned long ip_num)
+void Ilms::proc_lookup(unsigned long ip_num)
 {
 	char *data;
 	unsigned long ip_org_num;
@@ -395,7 +395,7 @@ void Ilms::proc_data_search(unsigned long ip_num)
 		count += send_child(data);
 	}
 
-	sc.buf[0] = PEER_DATA_SEARCH;
+	sc.buf[0] = PEER_LOOKUP;
 	count += send_peer(data);
 
 	if(count)
@@ -410,11 +410,11 @@ void Ilms::proc_data_search(unsigned long ip_num)
 
 		if(depth > 0)
 		{
-			sc.buf[sc.len++] = CMD_DATA_SEARCH;
-			sc.buf[0] = CMD_DATA_SEARCH_FAIL;
+			sc.buf[sc.len++] = CMD_LOOKUP;
+			sc.buf[0] = CMD_LOOKUP_NACK;
 		}
 		else
-			sc.buf[0] = CMD_DATA_SEARCH;
+			sc.buf[0] = CMD_LOOKUP;
 		this->send(parent->get_ip_num(), sc.buf, sc.len);
 	}
 }
@@ -425,7 +425,7 @@ void Ilms::proc_data_search(unsigned long ip_num)
  * 다른 노드들에 대해
  */
 
-void Ilms::proc_data_search_fail()
+void Ilms::proc_lookup_nack()
 {
 	char *data = sc.get_cur();
 	char *p_depth = sc.get_cur() + DATA_SIZE + 4 + 1;
@@ -454,7 +454,7 @@ void Ilms::proc_data_search_fail()
 }
 
 
-void Ilms::req_data_register()
+void Ilms::REQ_ID_REGISTER()
 {
 	char *data;
 	char *value;
@@ -468,10 +468,10 @@ void Ilms::req_data_register()
 	my_filter->insert(data);
 	insert(data,DATA_SIZE,value,0);
 
-	sc.buf[0] = CMD_BF_ADD;
+	sc.buf[0] = CMD_BF_UPDATE;
 	this->send(parent->get_ip_num(), sc.buf, sc.len);
 
-	sc.buf[0] = PEER_BF_ADD;
+	sc.buf[0] = PEER_BF_UPDATE;
 	for(unsigned int i=0; i < up_peer.size(); i++)
 		this->send(up_peer[i].get_ip_num(), sc.buf, sc.len);
 }
@@ -481,7 +481,7 @@ void Ilms::req_data_register()
  * 사실상 기존 프로토콜과 동일함
  */
 
-void Ilms::req_data_update()
+void Ilms::req_loc_update()
 {
 	char mode;
 	char *data;
@@ -541,7 +541,7 @@ void Ilms::req_data_update()
  * 클라이언트는 자식이 아니므로 자식관련 처리과정이 생략됨
  */
 
-void Ilms::req_data_search(unsigned long ip_num)
+void Ilms::req_loc_search(unsigned long ip_num)
 {
 	char *data;
 
@@ -580,10 +580,10 @@ void Ilms::req_data_search(unsigned long ip_num)
 
 	int count = 0;
 
-	sc.buf[0] = PEER_DATA_SEARCH;
+	sc.buf[0] = PEER_LOOKUP;
 	count += send_peer(data);
 
-	sc.buf[0] = CMD_DATA_SEARCH;
+	sc.buf[0] = CMD_LOOKUP;
 	count += send_child(data);
 
 	if(count)
@@ -603,7 +603,7 @@ void Ilms::req_data_search(unsigned long ip_num)
  * 클라이언트는 자식이 아니므로 자식관련 처리과정이 생략됨
  */
 
-void Ilms::req_data_delete(unsigned long ip_num)
+void Ilms::req_id_deregister(unsigned long ip_num)
 {
 	char *data;
 
@@ -616,7 +616,7 @@ void Ilms::req_data_delete(unsigned long ip_num)
 	}
 }
 
-void Ilms::peer_bf_add(unsigned long ip_num)
+void Ilms::peer_bf_update(unsigned long ip_num)
 {
 	char *data;
 	if(!sc.next_value(data,DATA_SIZE))
@@ -632,7 +632,7 @@ void Ilms::peer_bf_add(unsigned long ip_num)
 	}
 }
 
-void Ilms::peer_data_search(unsigned long ip_num)
+void Ilms::peer_lookup(unsigned long ip_num)
 {
 	char *data;
 	unsigned long ip_org_num;
@@ -657,13 +657,13 @@ void Ilms::peer_data_search(unsigned long ip_num)
 	if(!sc.next_value(up_down,1))
 		return;
 
-	sc.buf[sc.len++] = CMD_DATA_SEARCH;
-	sc.buf[0] = CMD_DATA_SEARCH_FAIL;
+	sc.buf[sc.len++] = CMD_LOOKUP;
+	sc.buf[0] = CMD_LOOKUP_NACK;
 	*up_down = MARK_UP;
 	this->send(ip_num, sc.buf, sc.len);
 }
 
-void Ilms::proc_data_search_down()
+void Ilms::proc_lookup_down()
 {
 	char *data;
 	unsigned long ip_org_num;
@@ -685,11 +685,11 @@ void Ilms::proc_data_search_down()
 		}
 	}
 	send_child(data);
-	sc.buf[0] = PEER_DATA_SEARCH_DOWN;
+	sc.buf[0] = PEER_LOOKUP_DOWN;
 	send_peer(data);
 }
 
-void Ilms::peer_data_search_down()
+void Ilms::peer_lookup_down()
 {
 	char *data;
 	unsigned long ip_org_num;

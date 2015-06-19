@@ -2,10 +2,10 @@
 
 #include "ilmscli.h"
 
-#define REQ_DATA_REGISTER					0x20
-#define REQ_DATA_UPDATE						0x21
-#define REQ_DATA_SEARCH						0x22
-#define REQ_DATA_DELETE						0x23
+#define REQ_ID_REGISTER					0x20
+#define REQ_LOC_UPDATE						0x21
+#define REQ_LOOKUP						0x22
+#define REQ_ID_DEREGISTER						0x23
 
 
 /*
@@ -40,12 +40,12 @@ void IlmsCli::setIp(std::string ip)
 	this->ip = ip;
 }
 
-void IlmsCli::req_data_register(char *data,std::string ip)
+void IlmsCli::req_id_register(char *data,std::string ip)
 {
 	char header[256];
 	int len=0;
 
-	header[len++] = REQ_DATA_REGISTER;
+	header[len++] = REQ_ID_REGISTER;
 	for(int i=0; i < 24; i++)
 		header[len++] = data[i];
 	
@@ -62,12 +62,12 @@ void IlmsCli::req_data_register(char *data,std::string ip)
  * 데이터 추가 요청
  */
 
-void IlmsCli::req_data_update(char mode, char *data,std::string ip)
+void IlmsCli::req_loc_update(char mode, char *data,std::string ip)
 {
 	char header[256];
 	int len=0;
 
-	header[len++] = REQ_DATA_UPDATE;
+	header[len++] = REQ_LOC_UPDATE;
 	header[len++] = mode;
 	for(int i=0; i < 24; i++)
 		header[len++] = data[i];
@@ -85,12 +85,12 @@ void IlmsCli::req_data_update(char mode, char *data,std::string ip)
  * 검색 결과를 받을때까지 기다림 
  */
 
-int IlmsCli::req_data_search(char *data, char *buf)
+int IlmsCli::req_lookup(char *data, char *buf)
 {
 	char header[BUF_SIZE];
 	int len=0;
 	
-	header[len++] = REQ_DATA_SEARCH;
+	header[len++] = REQ_LOOKUP;
 	for(int i=0; i < 24; i++)
 		header[len++] = data[i];
 	
@@ -103,12 +103,12 @@ int IlmsCli::req_data_search(char *data, char *buf)
  * 데이터 삭제 요청
  */
 
-void IlmsCli::req_data_delete(char *data)
+void IlmsCli::req_id_deregister(char *data)
 {
 	char header[BUF_SIZE];
 	int len=0;
 
-	header[len++] = REQ_DATA_DELETE;
+	header[len++] = REQ_ID_DEREGISTER;
 	for(int i=0; i < 24; i++)
 		header[len++] = data[i];
 

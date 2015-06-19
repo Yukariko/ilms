@@ -41,21 +41,21 @@ public:
 
 
 	//process
-	void proc_bf_add(unsigned long ip_num);
-	void proc_data_search(unsigned long ip_num);
-	void proc_data_search_fail();
-	void proc_data_search_down();
+	void proc_bf_update(unsigned long ip_num);
+	void proc_lookup(unsigned long ip_num);
+	void proc_lookup_nack();
+	void proc_lookup_down();
 
 	//request
-	void req_data_register();
-	void req_data_update();
-	void req_data_search(unsigned long ip_num);
-	void req_data_delete(unsigned long ip_num);
+	void req_id_register();
+	void req_loc_update();
+	void req_lookup(unsigned long ip_num);
+	void req_id_deregister(unsigned long ip_num);
 
 	//peer
-	void peer_bf_add(unsigned long ip_num);
-	void peer_data_search(unsigned long ip_num);
-	void peer_data_search_down();
+	void peer_bf_update(unsigned long ip_num);
+	void peer_lookup(unsigned long ip_num);
+	void peer_lookup_down();
 	
 	//thread
 	void child_run(unsigned int i);

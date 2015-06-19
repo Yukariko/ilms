@@ -30,7 +30,7 @@ int main()
 				exit(1);
 			}
 
-			ilms.req_data_register(data, value);
+			ilms.req_id_register(data, value);
 		}
 
 		else if(strcmp(cmd, "SET") == 0)
@@ -41,7 +41,7 @@ int main()
 				exit(1);
 			}
 
-			ilms.req_data_update(0, data, value);
+			ilms.req_loc_update(0, data, value);
 		}
 
 		else if(strcmp(cmd, "GET") == 0)
@@ -52,7 +52,7 @@ int main()
 				std::cout << "ERROR" << std::endl;
 				exit(1);
 			}
-			int len = ilms.req_data_search(data, buf);
+			int len = ilms.req_lookup(data, buf);
 
 			if(len > 0)
 				std::cout << buf << std::endl;
@@ -65,7 +65,7 @@ int main()
 				std::cout << "ERROR" << std::endl;
 				exit(1);
 			}
-			ilms.req_data_update(2,data,value);
+			ilms.req_loc_update(2,data,value);
 		}
 
 		else if(strcmp(cmd, "SUB") == 0)
@@ -76,7 +76,7 @@ int main()
 				exit(1);
 			}
 
-			ilms.req_data_update(1, data, value);
+			ilms.req_loc_update(1, data, value);
 		}
 
 		else if(strcmp(cmd, "DELETE") == 0)
@@ -86,7 +86,7 @@ int main()
 				std::cout << "ERROR" << std::endl;
 				exit(1);
 			}
-			ilms.req_data_delete(data);
+			ilms.req_id_deregister(data);
 		}
 
 		else if(strcmp(cmd, "EXIT") == 0)

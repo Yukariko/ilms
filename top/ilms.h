@@ -42,25 +42,26 @@ public:
 	bool search(char *key,int klen,std::string &val);
 	bool remove(char *key,int klen);
 
-
 	//process
-	void proc_bf_add(unsigned long ip_num);
-	void proc_data_search(unsigned long ip_num);
-	void proc_data_search_fail();
+	void proc_bf_update(unsigned long ip_num);
+	void proc_lookup(unsigned long ip_num);
+	void proc_lookup_nack();
+	void proc_lookup_down();
 
 	//request
-	void req_data_register();
-	void req_data_update();
-	void req_data_search(unsigned long ip_num);
-	void req_data_delete(unsigned long ip_num);
+	void req_id_register();
+	void req_loc_update();
+	void req_lookup(unsigned long ip_num);
+	void req_id_deregister(unsigned long ip_num);
 
 	//peer
-	void peer_bf_add(unsigned long ip_num);
-	void peer_data_search(unsigned long ip_num);
+	void peer_bf_update(unsigned long ip_num);
+	void peer_lookup(unsigned long ip_num);
+	void peer_lookup_down();
 
 	//top
-	void top_bf_add(unsigned long ip_num);
-	void top_data_search();
+	void top_bf_update(unsigned long ip_num);
+	void top_lookup();
 
 	//thread
 	void top_run(unsigned int i);
