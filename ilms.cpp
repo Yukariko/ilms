@@ -470,7 +470,7 @@ void Ilms::proc_lookup_nack()
 }
 
 
-void Ilms::REQ_ID_REGISTER()
+void Ilms::req_id_register()
 {
 	char *data;
 	char *value;
