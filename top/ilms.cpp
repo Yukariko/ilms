@@ -3,20 +3,19 @@
 #include <cstdlib>
 #include "ilms.h"
 
-#define CMD_BF_UPDATE								0x00
+#define CMD_BF_UPDATE					0x00
 #define CMD_LOOKUP						0x10
-#define CMD_LOOKUP_NACK			0x11
-#define CMD_LOOKUP_DOWN			0x12
+#define CMD_LOOKUP_NACK				0x11
+#define CMD_LOOKUP_DOWN				0x12
 
-#define REQ_ID_REGISTER					0x20
-#define REQ_LOC_UPDATE						0x21
+#define REQ_ID_REGISTER				0x20
+#define REQ_LOC_UPDATE				0x21
 #define REQ_LOOKUP						0x22
-#define REQ_ID_DEREGISTER						0x23
+#define REQ_ID_DEREGISTER			0x23
 
-#define PEER_BF_UPDATE								0x30
-#define PEER_LOOKUP					0x31
-#define PEER_LOOKUP_NACK			0x32
-#define PEER_LOOKUP_DOWN			0x33
+#define PEER_BF_UPDATE				0x30
+#define PEER_LOOKUP						0x31
+#define PEER_LOOKUP_DOWN			0x32
 
 #define DATA_ADD									0x00
 #define DATA_DELETE								0x01
