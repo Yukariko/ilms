@@ -47,7 +47,6 @@ public:
 	void proc_bf_update(unsigned long ip_num);
 	void proc_lookup(unsigned long ip_num);
 	void proc_lookup_nack();
-	void proc_lookup_down();
 
 	//request
 	void req_id_register();
@@ -58,7 +57,6 @@ public:
 	//peer
 	void peer_bf_update(unsigned long ip_num);
 	void peer_lookup(unsigned long ip_num);
-	void peer_lookup_down();
 
 	//top
 	void top_bf_update(unsigned long ip_num);
