@@ -1,0 +1,2 @@
+rm -rf db/
+./ilms
