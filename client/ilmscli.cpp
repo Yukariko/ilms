@@ -96,7 +96,7 @@ int IlmsCli::req_lookup(char *data, char *buf)
 	
 
 	this->send(header,len);
-	int len = this->recieve(buf);
+	len = this->recieve(buf);
 	memcpy(buf, buf + DATA_SIZE + 1, len - DATA_SIZE - 1);
 	return len - DATA_SIZE - 1;
 }
