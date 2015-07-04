@@ -53,8 +53,8 @@ long long test10(char *data){return (*(unsigned short *)(data + 18) * 1009LL ) %
 long long test11(char *data){return (*(unsigned int *)(data + 20) * 1009LL);}
 
 std::vector<Node> Tree::child;
-std::vector<Node> Tree::down_peer;
-std::vector<Node> Tree::up_peer;
+std::vector<Node> Tree::peered;
+std::vector<Node> Tree::peering;
 
 Bloomfilter* Ilms::my_filter;
 Bloomfilter** Ilms::child_filter;
@@ -90,10 +90,10 @@ Ilms::Ilms()
 			child_filter[i] = new Bloomfilter(defaultSize, 11, hash);
 	}
 
-	if(down_peer.size())
+	if(peered.size())
 	{
-		peer_filter = new Bloomfilter*[down_peer.size()];
-		for(unsigned int i=0; i < down_peer.size(); i++)
+		peer_filter = new Bloomfilter*[peered.size()];
+		for(unsigned int i=0; i < peered.size(); i++)
 			peer_filter[i] = new Bloomfilter(defaultSize, 11, hash);	
 	}
 	
@@ -148,7 +148,7 @@ Ilms::~Ilms()
 	delete my_filter;
 	if(child.size())
 		delete[] child_filter;
-	if(down_peer.size())
+	if(peered.size())
 		delete[] peer_filter;
 	close(sock);
 }
@@ -290,7 +290,7 @@ void Ilms::peer_run(unsigned int i)
 {
 	if(peer_filter[i]->lookBitArray(bitArray))
 	{
-		Ilms::send(down_peer[i].get_ip_num(), sc.buf, sc.len);
+		Ilms::send(peered[i].get_ip_num(), sc.buf, sc.len);
 		Ilms::global_counter++;
 	}
 }
@@ -298,9 +298,9 @@ void Ilms::peer_run(unsigned int i)
 int Ilms::send_peer(char *data)
 {
 	int ret = 0;
-	for(unsigned int i=0; i < down_peer.size();)
+	for(unsigned int i=0; i < peered.size();)
 	{
-		unsigned int range = std::min(NTHREAD, (unsigned int)down_peer.size() - i);
+		unsigned int range = std::min(NTHREAD, (unsigned int)peered.size() - i);
 		global_counter = 0;
 
 		for(unsigned int j=0; j < range; j++, i++)
@@ -487,8 +487,8 @@ void Ilms::req_id_register()
 	this->send(parent->get_ip_num(), sc.buf, sc.len);
 
 	sc.buf[0] = PEER_BF_UPDATE;
-	for(unsigned int i=0; i < up_peer.size(); i++)
-		this->send(up_peer[i].get_ip_num(), sc.buf, sc.len);
+	for(unsigned int i=0; i < peering.size(); i++)
+		this->send(peering[i].get_ip_num(), sc.buf, sc.len);
 }
 
 /*
@@ -637,9 +637,9 @@ void Ilms::peer_bf_update(unsigned long ip_num)
 	if(!sc.next_value(data,DATA_SIZE))
 		return;
 
-	for(unsigned int i=0; i < down_peer.size(); i++)
+	for(unsigned int i=0; i < peered.size(); i++)
 	{
-		if(ip_num == down_peer[i].get_ip_num())
+		if(ip_num == peered[i].get_ip_num())
 		{
 			peer_filter[i]->insert(data);
 			break;

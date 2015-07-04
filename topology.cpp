@@ -105,7 +105,7 @@ Tree::Tree()
 		{
 			error_handling("fgets failed");
 		}
-		down_peer.push_back(Node(buf));
+		peered.push_back(Node(buf));
 	}
 
 
@@ -121,7 +121,7 @@ Tree::Tree()
 		{
 			error_handling("fgets failed");
 		}
-		up_peer.push_back(Node(buf));
+		peering.push_back(Node(buf));
 	}
 
 	fclose(fp);

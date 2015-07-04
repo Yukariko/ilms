@@ -30,8 +30,8 @@ protected:
 
 	static std::vector<Node> top;
 	static std::vector<Node> child;
-	static std::vector<Node> down_peer;
-	static std::vector<Node> up_peer;
+	static std::vector<Node> peered;
+	static std::vector<Node> peering;
 };
 
 #endif
