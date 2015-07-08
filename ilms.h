@@ -48,8 +48,8 @@ public:
 	void proc_lookup_down();
 
 	//request
-	void req_id_register();
-	void req_loc_update();
+	void req_id_register(unsigned long ip_num);
+	void req_loc_update(unsigned long ip_num);
 	void req_lookup(unsigned long ip_num);
 	void req_id_deregister(unsigned long ip_num);
 

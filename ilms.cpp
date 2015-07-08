@@ -192,8 +192,8 @@ void Ilms::start()
 			case CMD_LOOKUP_NACK: proc_lookup_nack(); break;
 			case CMD_LOOKUP_DOWN: proc_lookup_down(); break;
 
-			case REQ_ID_REGISTER: req_id_register(); break;
-			case REQ_LOC_UPDATE: req_loc_update(); break;
+			case REQ_ID_REGISTER: req_id_register(ip_num); break;
+			case REQ_LOC_UPDATE: req_loc_update(ip_num); break;
 			case REQ_LOOKUP: req_lookup(ip_num); break;
 			case REQ_ID_DEREGISTER: req_id_deregister(ip_num); break;
 
@@ -469,7 +469,7 @@ void Ilms::proc_lookup_nack()
 }
 
 
-void Ilms::req_id_register()
+void Ilms::req_id_register(unsigned long ip_num)
 {
 	char *data;
 	char *value;
@@ -489,6 +489,7 @@ void Ilms::req_id_register()
 	sc.buf[0] = PEER_BF_UPDATE;
 	for(unsigned int i=0; i < peering.size(); i++)
 		this->send(peering[i].get_ip_num(), sc.buf, sc.len);
+	this->send(ip_num, sc.buf, sc.len);
 }
 
 /*
@@ -496,7 +497,7 @@ void Ilms::req_id_register()
  * 사실상 기존 프로토콜과 동일함
  */
 
-void Ilms::req_loc_update()
+void Ilms::req_loc_update(unsigned long ip_num)
 {
 	char mode;
 	char *data;
@@ -549,6 +550,7 @@ void Ilms::req_loc_update()
 	{
 		insert(data,DATA_SIZE,value,*(unsigned char *)(value-1));
 	}
+	this->send(ip_num, sc.buf, sc.len);
 }
 
 /*
@@ -629,6 +631,7 @@ void Ilms::req_id_deregister(unsigned long ip_num)
 	{
 		remove(data, DATA_SIZE);
 	}
+	this->send(ip_num, sc.buf, sc.len);
 }
 
 void Ilms::peer_bf_update(unsigned long ip_num)
