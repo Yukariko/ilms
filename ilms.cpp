@@ -216,7 +216,7 @@ void Ilms::start()
 const int nProt[] = {
 	CMD_BF_UPDATE, CMD_LOOKUP, CMD_LOOKUP_NACK, CMD_LOOKUP_DOWN, REQ_ID_REGISTER,
 	REQ_LOC_UPDATE, REQ_LOOKUP, REQ_ID_DEREGISTER, PEER_BF_UPDATE, PEER_LOOKUP,
-	PEER_LOOKUP_DOWN, 0
+	PEER_LOOKUP_DOWN, -1
 };
 
 const char *sProt[] = {
@@ -229,7 +229,7 @@ void Ilms::stat_run()
 {
 	while(1)
 	{
-		for(int i=0; nProt[i]; i++)
+		for(int i=0; nProt[i] != -1; i++)
 			std::cout << sProt[i] << " : " << protocol[nProt[i]] << std::endl;
 		sleep(60);
 	}
