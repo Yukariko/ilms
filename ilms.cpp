@@ -285,7 +285,7 @@ int Ilms::send_child(unsigned long ip_num, char *data)
 	int ret = 0;
 	for(unsigned int i=0; i < child.size(); i++)
 	{
-		if(ip_num != child.get_ip_num() && child_filter[i]->lookBitArray(bitArray))
+		if(ip_num != child[i].get_ip_num() && child_filter[i]->lookBitArray(bitArray))
 		{
 			Ilms::send(child[i].get_ip_num(), sc.buf, sc.len);
 			ret++;
