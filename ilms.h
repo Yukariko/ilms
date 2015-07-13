@@ -61,6 +61,7 @@ public:
 	//thread
 	void child_run(unsigned int i);
 	void peer_run(unsigned int i);
+	void stat_run();
 
 	//test
 	void test_process();
@@ -77,7 +78,10 @@ private:
 	static Scanner sc;
 
 	static std::atomic<int> global_counter;
-	std::thread task[NTHREAD];
+	std::thread stat;
+
+	static std::atomic<int> protocol[100];
+
 	static long long bitArray[12];
 	static int sock;
 	static struct sockaddr_in serv_adr;

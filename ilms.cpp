@@ -61,6 +61,9 @@ Bloomfilter** Ilms::child_filter;
 Bloomfilter** Ilms::peer_filter;
 Scanner Ilms::sc;
 std::atomic<int> Ilms::global_counter;
+
+std::atomic<int> Ilms::protocol[100];
+
 long long Ilms::bitArray[12];
 int Ilms::sock;
 struct sockaddr_in Ilms::serv_adr;
@@ -165,6 +168,8 @@ void Ilms::start()
 	struct sockaddr_in clnt_adr; 
 	socklen_t clnt_adr_sz;
 
+	stat = std::thread(&Ilms::stat_run,this);
+
 	while(1)
 	{
 		clnt_adr_sz = sizeof(clnt_adr);
@@ -182,6 +187,9 @@ void Ilms::start()
 				continue;
 
 			DEBUG("Protocol OK!");
+
+			if(cmd >= 0 && cmd < 100)
+				protocol[cmd]++;
 
 			unsigned long ip_num = clnt_adr.sin_addr.s_addr;
 
@@ -202,6 +210,28 @@ void Ilms::start()
 			case PEER_LOOKUP_DOWN: peer_lookup_down(); break;
 			}
 		}
+	}
+}
+
+const int nProt[] = {
+	CMD_BF_UPDATE, CMD_LOOKUP, CMD_LOOKUP_NACK, CMD_LOOKUP_DOWN, REQ_ID_REGISTER,
+	REG_LOC_UPDATE, REQ_LOOKUP, REQ_ID_DEREGISTER, PEER_BF_UPDATE, PEER_LOOKUP,
+	PEER_LOOKUP_DOWN, 0;
+};
+
+const char *sProt[] = {
+	"CMD_BF_UPDATE", "CMD_LOOKUP", "CMD_LOOKUP_NACK", "CMD_LOOKUP_DOWN", "REQ_ID_REGISTER",
+	"REG_LOC_UPDATE", "REQ_LOOKUP", "REQ_ID_DEREGISTER", "PEER_BF_UPDATE", "PEER_LOOKUP",
+	"PEER_LOOKUP_DOWN";
+};
+
+void Ilms::stat_run()
+{
+	while(1)
+	{
+		for(int i=0; nProt[i]; i++)
+			std::cout << sProt[i] << " : " << protocol[nProt[i]] << std::endl;
+		sleep(60);
 	}
 }
 
@@ -239,21 +269,13 @@ void Ilms::child_run(unsigned int i)
 int Ilms::send_child(char *data)
 {
 	int ret = 0;
-	for(unsigned int i=0; i < child.size();)
+	for(unsigned int i=0; i < child.size(); i++)
 	{
-		unsigned int range = std::min(NTHREAD, (unsigned int)child.size() - i);
-		global_counter = 0;
-
-		for(unsigned int j=0; j < range; j++, i++)
+		if(child_filter[i]->lookBitArray(bitArray))
 		{
-			task[j] = std::thread(&Ilms::child_run,this,i);
+			Ilms::send(child[i].get_ip_num(), sc.buf, sc.len);
+			ret++;
 		}
-
-		for(unsigned int j=0; j < range; j++)
-		{
-			task[j].join();
-		}
-		ret += global_counter;
 	}
 	return ret;
 }
@@ -261,27 +283,13 @@ int Ilms::send_child(char *data)
 int Ilms::send_child(unsigned long ip_num, char *data)
 {
 	int ret = 0;
-	for(unsigned int i=0; i < child.size();)
+	for(unsigned int i=0; i < child.size(); i++)
 	{
-		unsigned int range = std::min(NTHREAD, (unsigned int)child.size() - i);
-		global_counter = 0;
-
-		for(unsigned int j=0; j < range; j++, i++)
+		if(ip_num != child.get_ip_num() && child_filter[i]->lookBitArray(bitArray))
 		{
-			if(ip_num == child[i].get_ip_num())
-			{
-				j--;
-				range--;
-				continue;
-			}
-			task[j] = std::thread(&Ilms::child_run,this,i);
+			Ilms::send(child[i].get_ip_num(), sc.buf, sc.len);
+			ret++;
 		}
-
-		for(unsigned int j=0; j < range; j++)
-		{
-			task[j].join();
-		}
-		ret += global_counter;
 	}
 	return ret;
 }
@@ -290,7 +298,7 @@ void Ilms::peer_run(unsigned int i)
 {
 	if(peer_filter[i]->lookBitArray(bitArray))
 	{
-		Ilms::send(peered[i].get_ip_num(), sc.buf, sc.len);
+		Ilms::send(down_peer[i].get_ip_num(), sc.buf, sc.len);
 		Ilms::global_counter++;
 	}
 }
@@ -298,19 +306,13 @@ void Ilms::peer_run(unsigned int i)
 int Ilms::send_peer(char *data)
 {
 	int ret = 0;
-	for(unsigned int i=0; i < peered.size();)
+	for(unsigned int i=0; i < down_peer.size();)
 	{
-		unsigned int range = std::min(NTHREAD, (unsigned int)peered.size() - i);
-		global_counter = 0;
-
-		for(unsigned int j=0; j < range; j++, i++)
-			task[j] = std::thread(&Ilms::peer_run,this,i);
-
-		for(unsigned int j=0; j < range; j++)
+		if(peer_filter[i]->lookBitArray(bitArray))
 		{
-			task[j].join();
+			Ilms::send(down_peer[i].get_ip_num(), sc.buf, sc.len);
+			ret++;
 		}
-		ret += global_counter;
 	}
 	return ret;
 }
