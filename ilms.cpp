@@ -298,7 +298,7 @@ void Ilms::peer_run(unsigned int i)
 {
 	if(peer_filter[i]->lookBitArray(bitArray))
 	{
-		Ilms::send(down_peer[i].get_ip_num(), sc.buf, sc.len);
+		Ilms::send(peered[i].get_ip_num(), sc.buf, sc.len);
 		Ilms::global_counter++;
 	}
 }
@@ -306,11 +306,11 @@ void Ilms::peer_run(unsigned int i)
 int Ilms::send_peer(char *data)
 {
 	int ret = 0;
-	for(unsigned int i=0; i < down_peer.size();)
+	for(unsigned int i=0; i < peered.size();)
 	{
 		if(peer_filter[i]->lookBitArray(bitArray))
 		{
-			Ilms::send(down_peer[i].get_ip_num(), sc.buf, sc.len);
+			Ilms::send(peered[i].get_ip_num(), sc.buf, sc.len);
 			ret++;
 		}
 	}
