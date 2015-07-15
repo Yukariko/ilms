@@ -1,7 +1,9 @@
 #include <iostream>
+#include "ilms.h"
 
 int main()
 {
-	std::string str="hi";
+	Ilms ilms;
+	ilms.start();
 	return 0;
 }
