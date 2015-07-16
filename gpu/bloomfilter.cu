@@ -34,10 +34,10 @@ __global__ void cudaLookBitArray(unsigned char *filter, long long *bitArray, int
 		*res = 0;
 }
 
-__global__ void cudaLookFilters(unsigned char **filters, long long *bitArray, unsigned char *ans)
+__global__ void cudaLookFilters(unsigned char **filters, long long *bitArray, unsigned char *ans, unsigned int size)
 {
 	int nFilter = threadIdx.x;
-	int nHash = threadIdx.y;
+	int nHash = blockIdx.x;
 
 	if(!(filters[nFilter][bitArray[nHash] >> 3] & (1 << (bitArray[nHash] & 7))))
 		ans[nFilter] = 0;
@@ -137,10 +137,10 @@ void Bloomfilter::lookFilters(unsigned char **filters, unsigned char *cuda_ans, 
 {
 	setAnswer(cuda_ans, size);
 
-	dim3 block(1);
-	dim3 thread(size,11);
+	dim3 block(11);
+	dim3 thread(size);
 
-	cudaLookFilters<<<block, thread>>>(filters, bitArray, cuda_ans);
+	cudaLookFilters<<<block, thread>>>(filters, bitArray, cuda_ans, size);
 	error_handling( cudaMemcpy((void *)ans, (const void *)cuda_ans, size, cudaMemcpyDeviceToHost) );
 }
 
