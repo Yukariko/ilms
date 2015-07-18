@@ -123,6 +123,7 @@ Ilms::Ilms()
 	if(peered.size())
 		Bloomfilter::initFilters(&cuda_peer_filter, peered.size());
 	Bloomfilter::initAnswer(&cuda_ans, std::max(child.size(), peered.size()));
+
 	std::cout << "!" << std::endl;
 	ans = new unsigned char[std::max(child.size(), peered.size())];
 
@@ -284,7 +285,7 @@ void Ilms::child_run(unsigned int i)
 int Ilms::send_child(char *data)
 {
 	int ret = 0;
-
+	
 	Bloomfilter::lookFilters(cuda_child_filter, cuda_ans, bitArray, ans, child.size());
 
 	for(unsigned int i=0; i < child.size(); i++)
@@ -328,7 +329,9 @@ int Ilms::send_peer(char *data)
 {
 	int ret = 0;
 
-	Bloomfilter::lookFilters(cuda_peer_filter, cuda_ans, bitArray, ans, child.size());
+	if(peered.size() == 0)
+		return 0;
+	Bloomfilter::lookFilters(cuda_peer_filter, cuda_ans, bitArray, ans, peered.size());
 
 	for(unsigned int i=0; i < peered.size();)
 	{

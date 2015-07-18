@@ -19,6 +19,8 @@
 
 #include "bloomfilter.h"
 
+using namespace std;
+
 //const int bf_size = 2 * 1024 * 1024;
 
 __global__ void cudaSetBitArray(unsigned char *filter, long long *bitArray)
@@ -36,9 +38,9 @@ __global__ void cudaLookBitArray(unsigned char *filter, long long *bitArray, int
 
 __global__ void cudaLookFilters(unsigned char **filters, long long *bitArray, unsigned char *ans)
 {
-	int nFilter = threadIdx.x;
+	int nFilter = blockIdx.x * 50 + threadIdx.x;
 	int nHash = threadIdx.y;
-
+	
 	if(!(filters[nFilter][bitArray[nHash] >> 3] & (1 << (bitArray[nHash] & 7))))
 		ans[nFilter] = 0;
 }
@@ -98,7 +100,6 @@ void Bloomfilter::getBitArray(long long *&bitArray, char *data)
 		array[i] = hash[i](data) % size;
 	}
 	error_handling( cudaMemcpy((void *)cudaBitArray, (const void *)array, sizeof(long long) * numHash, cudaMemcpyHostToDevice) );
-	//error_handling( cudaMemcpy((void *)bitArray, (const void *)cudaBitArray, sizeof(long long) * numHash, cudaMemcpyHostToDevice) );
 	bitArray = cudaBitArray;
 }
 
@@ -120,7 +121,9 @@ void Bloomfilter::initFilters(unsigned char ***filters, unsigned int size)
 
 void Bloomfilter::insertFilters(unsigned char **filters, unsigned int idx)
 {
-	error_handling( cudaMemcpy(&filters[idx], (const void *)&filter, sizeof(unsigned char *), cudaMemcpyHostToDevice) );
+	//cout << filters << endl;
+	//cout << filters + idx << endl;
+	error_handling( cudaMemcpy((void **)(filters + idx), (const void *)&filter, sizeof(unsigned char *), cudaMemcpyHostToDevice) );
 }
 
 void Bloomfilter::initAnswer(unsigned char **ans, unsigned int size)
@@ -137,8 +140,8 @@ void Bloomfilter::lookFilters(unsigned char **filters, unsigned char *cuda_ans, 
 {
 	setAnswer(cuda_ans, size);
 
-	dim3 block(1);
-	dim3 thread(size,11);
+	dim3 block(size/50);
+	dim3 thread(50,11);
 
 	cudaLookFilters<<<block, thread>>>(filters, bitArray, cuda_ans);
 	error_handling( cudaMemcpy((void *)ans, (const void *)cuda_ans, size, cudaMemcpyDeviceToHost) );
