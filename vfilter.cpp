@@ -17,5 +17,6 @@ int main(int argc, char *argv[])
 	for(int i=1; i < num; i++)
 		fprintf(fp, "0\n");
 	fprintf(fp, "210.117.184.166\n0\n0\n");
+	fclose(fp);
 	return 0;
 }

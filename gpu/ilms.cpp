@@ -290,16 +290,17 @@ int Ilms::send_child(char *data)
 
 	int ret = 0;
 
-	struct timespec tp; 
+	/*struct timespec tp; 
 	int rs; 
 
 	rs = clock_gettime(CLOCK_REALTIME, &tp); 
 	printf("%ld %ld\n", tp.tv_sec, tp.tv_nsec); 
+	*/
 	
 	Bloomfilter::lookFilters(cuda_child_filter, cuda_ans, bitArray, ans, child.size());
 
-	rs = clock_gettime(CLOCK_REALTIME, &tp); 
-	printf("%ld %ld\n", tp.tv_sec, tp.tv_nsec); 
+	//rs = clock_gettime(CLOCK_REALTIME, &tp); 
+	//printf("%ld %ld\n", tp.tv_sec, tp.tv_nsec); 
 
 	for(unsigned int i=0; i < child.size(); i++)
 	{
