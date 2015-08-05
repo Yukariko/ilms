@@ -1,6 +1,7 @@
 #include <cstring>
 #include <cstdio>
 #include <cstdlib>
+#include <ctime>
 #include "ilms.h"
 
 #define CMD_BF_UPDATE					0x00
@@ -284,9 +285,21 @@ void Ilms::child_run(unsigned int i)
 
 int Ilms::send_child(char *data)
 {
+	if(child.size() == 0)
+		return 0;
+
 	int ret = 0;
+
+	struct timespec tp; 
+	int rs; 
+
+	rs = clock_gettime(CLOCK_REALTIME, &tp); 
+	printf("%ld %ld\n", tp.tv_sec, tp.tv_nsec); 
 	
 	Bloomfilter::lookFilters(cuda_child_filter, cuda_ans, bitArray, ans, child.size());
+
+	rs = clock_gettime(CLOCK_REALTIME, &tp); 
+	printf("%ld %ld\n", tp.tv_sec, tp.tv_nsec); 
 
 	for(unsigned int i=0; i < child.size(); i++)
 	{
@@ -301,6 +314,9 @@ int Ilms::send_child(char *data)
 
 int Ilms::send_child(unsigned long ip_num, char *data)
 {
+	if(child.size() == 0)
+		return 0;
+
 	int ret = 0;
 
 	Bloomfilter::lookFilters(cuda_child_filter, cuda_ans, bitArray, ans, child.size());

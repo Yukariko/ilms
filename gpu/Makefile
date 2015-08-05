@@ -1,6 +1,6 @@
 LIBPATH = /home/jo/leveldb-master
 CPPFLAGS = -Wall -O -std=c++0x -g -L$(LIBPATH) -I $(LIBPATH)/include -I/usr/local/cuda/include/
-LDFLAGS = -lleveldb  -L /usr/local/cuda/lib64 -lcudart
+LDFLAGS = -lleveldb  -L /usr/local/cuda/lib64 -lcudart -lrt
 
 NVCC = nvcc
 
