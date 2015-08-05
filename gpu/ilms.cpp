@@ -145,7 +145,7 @@ void Ilms::test_process()
 	{
 		if(child[i].get_ip_num() == 0)
 		{
-			for(int j=0;j<10000;j++)
+			for(int j=0;j<20000;j++)
 			{
 				for(int k=0;k<24;k+=2)
 				{
