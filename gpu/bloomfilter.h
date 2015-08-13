@@ -22,20 +22,25 @@
 __global__ void cudaSetBitArray(unsigned char *filter, long long *bitArray);
 __global__ void cudaLookBitArray(unsigned char *filter, long long *bitArray, int *res);
 __global__ void cudaLookFilters(unsigned char **filters, long long *bitArray, unsigned char *ans);
+__global__ void cudaMergeFilter(unsigned char *dstFilter, unsigned char *srcFilter);
 
 class Bloomfilter
 {
 public:
-    Bloomfilter(long long size, int numHash,long long (**hash)(char *));
+    Bloomfilter(long long size, int numHash,long long (**hash)(const char *));
     ~Bloomfilter();
 
-    void insert(char *data);
-    bool lookup(char *data);
+    void insert(const char *data);
+    bool lookup(const char *data);
 
     unsigned char *getFilter();
     void copyFilter(unsigned char *hostFilter);
-	void getBitArray(long long *&bitArray, char *data);
+    void setFilter(unsigned char *hostFilter);
+	void getBitArray(long long *&bitArray, const char *data);
 	bool lookBitArray(long long *bitArray);
+
+    void mergeFilter(unsigned char *filter);
+    void zeroFilter();
 
     static void initFilters(unsigned char ***filters, unsigned int size);
     static void initAnswer(unsigned char **ans, unsigned int size);
@@ -51,5 +56,5 @@ private:
 
 	long long size;
 	int numHash;
-	long long (**hash)(char *);
+	long long (**hash)(const char *);
 };

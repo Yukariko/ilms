@@ -45,12 +45,20 @@ __global__ void cudaLookFilters(unsigned char **filters, long long *bitArray, un
 		ans[nFilter] = 0;
 }
 
-Bloomfilter::Bloomfilter(long long size, int numHash,long long (**hash)(char *))
+__global__ void cudaMergeFilter(unsigned char *dstFilter, unsigned char *srcFilter)
+{
+	int idx = threadIdx.x * 1024;
+
+	for(int i=0; i < 1024; i++)
+		dstFilter[idx + i] |= srcFilter[idx + i];
+}
+
+Bloomfilter::Bloomfilter(long long size, int numHash,long long (**hash)(const char *))
 {
 	this->size = size;
 	this->numHash = numHash;
 
-	this->hash = (long long (**)(char *))malloc(sizeof(long long (*)(char *)) * numHash);
+	this->hash = (long long (**)(const char *))malloc(sizeof(long long (*)(const char *)) * numHash);
 
 	for(int i=0;i<numHash;i++)
 		this->hash[i] = hash[i];
@@ -68,14 +76,14 @@ Bloomfilter::~Bloomfilter()
 		cudaFree(cudaRes);
 }
 
-void Bloomfilter::insert(char *data)
+void Bloomfilter::insert(const char *data)
 {
 	long long *bitArray;
 	getBitArray(bitArray, data);
 	cudaSetBitArray<<<numHash,1>>>(filter, cudaBitArray);
 }
 
-bool Bloomfilter::lookup(char *data)
+bool Bloomfilter::lookup(const char *data)
 {
 	long long *bitArray;
 	getBitArray(bitArray, data);
@@ -92,7 +100,12 @@ void Bloomfilter::copyFilter(unsigned char *hostFilter)
 	return error_handling( cudaMemcpy((void *)hostFilter, (const void *)filter, size / 8 + 1, cudaMemcpyDeviceToHost) );
 }
 
-void Bloomfilter::getBitArray(long long *&bitArray, char *data)
+void Bloomfilter::setFilter(unsigned char *hostFilter)
+{
+	return error_handling( cudaMemcpy((void *)filter, (const void *)hostFilter, size / 8 + 1, cudaMemcpyHostToDevice) );
+}
+
+void Bloomfilter::getBitArray(long long *&bitArray, const char *data)
 {
 	long long array[20];
 	for(int i=0;i<numHash;i++)
@@ -145,6 +158,16 @@ void Bloomfilter::lookFilters(unsigned char **filters, unsigned char *cuda_ans, 
 
 	cudaLookFilters<<<block, thread>>>(filters, bitArray, cuda_ans);
 	error_handling( cudaMemcpy((void *)ans, (const void *)cuda_ans, size, cudaMemcpyDeviceToHost) );
+}
+
+void Bloomfilter::zeroFilter()
+{
+	error_handling( cudaMemset((void *)filter, 0, size / 8 + 1) );
+}
+
+void Bloomfilter::mergeFilter(unsigned char *filter)
+{
+	cudaMergeFilter<<<1,size / 8 / 1024>>>(this->filter, filter);
 }
 
 
