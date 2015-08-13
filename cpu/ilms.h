@@ -87,7 +87,7 @@ private:
 
 	static std::atomic<int> protocol[100];
 
-	static long long *bitArray;
+	static long long bitArray[12];
 	static int sock;
 	static struct sockaddr_in serv_adr, ref_adr;
 };

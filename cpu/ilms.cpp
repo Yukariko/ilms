@@ -291,7 +291,7 @@ void Ilms::refresh_run()
 			for(unsigned int i=0; i < child.size(); i++)
 			{
 				if(child[i].get_ip_num() == ip_num)
-					child_filter[i]->setFilter(filter);
+					child_filter[i]->setFilter(shadow_filter->filter);
 				else
 					shadow_filter->mergeFilter(child_filter[i]->filter);
 			}

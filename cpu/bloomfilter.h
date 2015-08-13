@@ -16,8 +16,8 @@ public:
 	bool lookBitArray(long long *bitArray);
 	void getBitArray(long long *bitArray, const char *data);
 
-private:
 	unsigned char *filter;
+private:
 	long long size;
 	int numHash;
 	long long (**hash)(const char *);
