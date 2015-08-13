@@ -40,17 +40,20 @@
 
 const long long defaultSize = 8LL * 2 * 1024 * 1024;
 
-long long test(char *data){return (*(unsigned short *)(data + 0) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 0;}
-long long test2(char *data){return (*(unsigned short *)(data + 2) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 1;}
-long long test3(char *data){return (*(unsigned short *)(data + 4) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 2;}
-long long test4(char *data){return (*(unsigned short *)(data + 6) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 3;;}
-long long test5(char *data){return (*(unsigned short *)(data + 8) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 4;;}
-long long test6(char *data){return (*(unsigned short *)(data + 10) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 5;;}
-long long test7(char *data){return (*(unsigned short *)(data + 12) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 6;;}
-long long test8(char *data){return (*(unsigned short *)(data + 14) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 7;;}
-long long test9(char *data){return (*(unsigned short *)(data + 16) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 8;;}
-long long test10(char *data){return (*(unsigned short *)(data + 18) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 9;}
-long long test11(char *data){return (*(unsigned int *)(data + 20) * 1009LL);}
+long long test(const char *data){return (*(unsigned short *)(data + 0) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 0;}
+long long test2(const char *data){return (*(unsigned short *)(data + 2) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 1;}
+long long test3(const char *data){return (*(unsigned short *)(data + 4) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 2;}
+long long test4(const char *data){return (*(unsigned short *)(data + 6) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 3;;}
+long long test5(const char *data){return (*(unsigned short *)(data + 8) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 4;;}
+long long test6(const char *data){return (*(unsigned short *)(data + 10) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 5;;}
+long long test7(const char *data){return (*(unsigned short *)(data + 12) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 6;;}
+long long test8(const char *data){return (*(unsigned short *)(data + 14) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 7;;}
+long long test9(const char *data){return (*(unsigned short *)(data + 16) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 8;;}
+long long test10(const char *data){return (*(unsigned short *)(data + 18) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 9;}
+long long test11(const char *data){return (*(unsigned int *)(data + 20) * 1009LL);}
+
+leveldb::DB* Ilms::db;
+leveldb::Options Ilms::options;
 
 std::vector<Node> Tree::child;
 std::vector<Node> Tree::peered;
@@ -59,6 +62,8 @@ std::vector<Node> Tree::peering;
 Bloomfilter* Ilms::my_filter;
 Bloomfilter** Ilms::child_filter;
 Bloomfilter** Ilms::peer_filter;
+Bloomfilter* Ilms::shadow_filter;
+
 Scanner Ilms::sc;
 std::atomic<int> Ilms::global_counter;
 
@@ -82,9 +87,10 @@ struct sockaddr_in Ilms::serv_adr;
 Ilms::Ilms()
 {
 	// bloomfilter init
-	long long (*hash[11])(char *) = {test,test2,test3,test4,test5,test6,test7,test8,test9,test10,test11};
+	long long (*hash[11])(const char *) = {test,test2,test3,test4,test5,test6,test7,test8,test9,test10,test11};
 	
 	my_filter = new Bloomfilter(defaultSize, 11, hash);
+	shadow_filter = new Bloomfilter(defaultSize, 11, hash);
 
 	if(child.size())
 	{
@@ -169,6 +175,7 @@ void Ilms::start()
 	socklen_t clnt_adr_sz;
 
 	stat = std::thread(&Ilms::stat_run,this);
+	refresh = std::thread(&Ilms::refresh_run, this);
 
 	while(1)
 	{
@@ -235,11 +242,103 @@ void Ilms::stat_run()
 	}
 }
 
+void Ilms::refresh_run()
+{
+	if(child.size() > 0)
+	{
+		int sd = socket(PF_INET, SOCK_STREAM, 0);
+		if(sd == -1)
+		{
+			perror("socket");
+			exit(1);
+		}
+
+		int option;
+		setsockopt(sd, SOL_SOCKET, SO_REUSEADDR, (void *)&option, 4);
+
+		struct sockaddr_in ref_adr;
+		memset(&ref_adr, 0, sizeof(ref_adr));
+		ref_adr.sin_family = PF_INET;
+		ref_adr.sin_addr.s_addr = htonl(INADDR_ANY);
+		ref_adr.sin_port = htons(REFRESH_PORT);
+
+		if(bind(sd, (struct sockaddr*)&ref_adr, sizeof(ref_adr)))
+		{
+			perror("bind");
+			exit(1);
+		}
+
+		if(listen(sd, 0xFFF))
+		{
+			perror("listen");
+			exit(1);
+		}
+	
+		int ns;
+		struct sockaddr_in cli;
+		int clientlen;
+
+		while((ns = accept(sd, (struct sockaddr *)&cli,  (socklen_t *)&clientlen)) != -1)
+		{
+			unsigned long ip_num = cli.sin_addr.s_addr;
+
+			unsigned char *fpt = shadow_filter->filter;
+			for(int len; (len = recv(ns, fpt, 4096, 0)) > 0; )
+				fpt += len;
+
+			close(ns);
+
+			for(unsigned int i=0; i < child.size(); i++)
+			{
+				if(child[i].get_ip_num() == ip_num)
+					child_filter[i]->setFilter(filter);
+				else
+					shadow_filter->mergeFilter(child_filter[i]->filter);
+			}
+
+			leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
+			for(it->SeekToFirst(); it->Valid(); it->Next())
+			{
+				std::string key = it->key().ToString();
+				if(key.length() != DATA_SIZE)
+					continue;
+				shadow_filter->insert(key.c_str());
+			}
+			assert(it->status().ok());	// Check for any errors found during the scan
+			delete it;
+
+			send_refresh(parent->get_ip_num(), shadow_filter->filter);
+		}
+	}
+	else
+	{
+		while(1)
+		{
+			sleep(10);
+			shadow_filter->zeroFilter();
+
+			leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
+			for(it->SeekToFirst(); it->Valid(); it->Next())
+			{
+				std::string key = it->key().ToString();
+				if(key.length() != DATA_SIZE)
+					continue;
+				shadow_filter->insert(key.c_str());
+			}
+			assert(it->status().ok());	// Check for any errors found during the scan
+			delete it;
+
+			send_refresh(parent->get_ip_num(), shadow_filter->filter);
+		}
+	}
+}
+
+
 /*
  * 버퍼 전송
  */
 
-void Ilms::send(unsigned long ip_num,const char *buf,int len)
+void Ilms::send_node(unsigned long ip_num,const char *buf,int len)
 {
 	if(ip_num==0)
 		return;
@@ -257,11 +356,49 @@ void Ilms::send(unsigned long ip_num,const char *buf,int len)
 	DEBUG("Send OK!");
 }
 
+void Ilms::send_refresh(unsigned long ip_num, unsigned char *filter)
+{
+	if(ip_num == 0)
+		return;
+
+	int sd = socket(PF_INET, SOCK_STREAM, 0);
+	if(sd == -1)
+	{
+		perror("sock open");
+		exit(1);
+	}
+
+	struct sockaddr_in clnt_adr;
+
+	memset(&clnt_adr,0,sizeof(clnt_adr));
+	clnt_adr.sin_family = AF_INET;
+	clnt_adr.sin_addr.s_addr = ip_num;
+	clnt_adr.sin_port = htons(REFRESH_PORT);
+
+	if(connect(sd, (struct sockaddr *)&clnt_adr, sizeof(clnt_adr)) == -1)
+	{
+		perror("connect");
+		exit(1);
+	}
+
+	unsigned char *fpt = filter;
+	unsigned char *endf = filter + defaultSize / 8 + 1;
+
+	for(int len; endf - fpt > 0 && (len = send(sd, fpt, std::min(4096, (int)(endf - fpt)), 0)) > 0;)
+		fpt += len; 
+	
+
+	close(sd);
+
+	DEBUG("Refresh Send OK!");
+
+}
+
 void Ilms::child_run(unsigned int i)
 {
 	if(child_filter[i]->lookBitArray(bitArray))
 	{
-		Ilms::send(child[i].get_ip_num(), sc.buf, sc.len);
+		Ilms::send_node(child[i].get_ip_num(), sc.buf, sc.len);
 		Ilms::global_counter++;
 	}
 }
@@ -273,7 +410,7 @@ int Ilms::send_child(char *data)
 	{
 		if(child_filter[i]->lookBitArray(bitArray))
 		{
-			Ilms::send(child[i].get_ip_num(), sc.buf, sc.len);
+			Ilms::send_node(child[i].get_ip_num(), sc.buf, sc.len);
 			ret++;
 		}
 	}
@@ -287,7 +424,7 @@ int Ilms::send_child(unsigned long ip_num, char *data)
 	{
 		if(ip_num != child[i].get_ip_num() && child_filter[i]->lookBitArray(bitArray))
 		{
-			Ilms::send(child[i].get_ip_num(), sc.buf, sc.len);
+			Ilms::send_node(child[i].get_ip_num(), sc.buf, sc.len);
 			ret++;
 		}
 	}
@@ -298,7 +435,7 @@ void Ilms::peer_run(unsigned int i)
 {
 	if(peer_filter[i]->lookBitArray(bitArray))
 	{
-		Ilms::send(peered[i].get_ip_num(), sc.buf, sc.len);
+		Ilms::send_node(peered[i].get_ip_num(), sc.buf, sc.len);
 		Ilms::global_counter++;
 	}
 }
@@ -310,7 +447,7 @@ int Ilms::send_peer(char *data)
 	{
 		if(peer_filter[i]->lookBitArray(bitArray))
 		{
-			Ilms::send(peered[i].get_ip_num(), sc.buf, sc.len);
+			Ilms::send_node(peered[i].get_ip_num(), sc.buf, sc.len);
 			ret++;
 		}
 	}
@@ -330,7 +467,7 @@ void Ilms::send_id(unsigned long ip_num, char *id, const char *ret, int len)
 	buf[pos++] = count;
 	strncpy(buf+pos,ret,len);
 	pos += len;
-	this->send(ip_num, buf, pos);
+	this->send_node(ip_num, buf, pos);
 }
 
 /*
@@ -355,7 +492,7 @@ void Ilms::proc_bf_update(unsigned long ip_num)
 		}
 	}
 	if(find)
-		this->send(parent->get_ip_num(), sc.buf, sc.len);
+		this->send_node(parent->get_ip_num(), sc.buf, sc.len);
 }
 
 
@@ -432,7 +569,7 @@ void Ilms::proc_lookup(unsigned long ip_num)
 		}
 		else
 			sc.buf[0] = CMD_LOOKUP;
-		this->send(parent->get_ip_num(), sc.buf, sc.len);
+		this->send_node(parent->get_ip_num(), sc.buf, sc.len);
 	}
 }
 
@@ -463,7 +600,7 @@ void Ilms::proc_lookup_nack()
 
 		if(depth == 1)
 			sc.buf[0] = sc.buf[--sc.len];
-		this->send(parent->get_ip_num(), sc.buf, sc.len);
+		this->send_node(parent->get_ip_num(), sc.buf, sc.len);
 		return;
 	}
 
@@ -486,12 +623,12 @@ void Ilms::req_id_register(unsigned long ip_num)
 	insert(data,DATA_SIZE,value,0);
 
 	sc.buf[0] = CMD_BF_UPDATE;
-	this->send(parent->get_ip_num(), sc.buf, sc.len);
+	this->send_node(parent->get_ip_num(), sc.buf, sc.len);
 
 	sc.buf[0] = PEER_BF_UPDATE;
 	for(unsigned int i=0; i < peering.size(); i++)
-		this->send(peering[i].get_ip_num(), sc.buf, sc.len);
-	this->send(ip_num, sc.buf, sc.len);
+		this->send_node(peering[i].get_ip_num(), sc.buf, sc.len);
+	this->send_node(ip_num, sc.buf, sc.len);
 }
 
 /*
@@ -552,7 +689,7 @@ void Ilms::req_loc_update(unsigned long ip_num)
 	{
 		insert(data,DATA_SIZE,value,*(unsigned char *)(value-1));
 	}
-	this->send(ip_num, sc.buf, sc.len);
+	this->send_node(ip_num, sc.buf, sc.len);
 }
 
 /*
@@ -613,7 +750,7 @@ void Ilms::req_lookup(unsigned long ip_num)
 	{
 		up_down = MARK_UP;
 		*(unsigned long *)p_depth = 0;
-		this->send(parent->get_ip_num(), sc.buf, sc.len);
+		this->send_node(parent->get_ip_num(), sc.buf, sc.len);
 	}
 }
 
@@ -633,7 +770,7 @@ void Ilms::req_id_deregister(unsigned long ip_num)
 	{
 		remove(data, DATA_SIZE);
 	}
-	this->send(ip_num, sc.buf, sc.len);
+	this->send_node(ip_num, sc.buf, sc.len);
 }
 
 void Ilms::peer_bf_update(unsigned long ip_num)
@@ -680,7 +817,7 @@ void Ilms::peer_lookup(unsigned long ip_num)
 	sc.buf[sc.len++] = CMD_LOOKUP;
 	sc.buf[0] = CMD_LOOKUP_NACK;
 	*up_down = MARK_UP;
-	this->send(ip_num, sc.buf, sc.len);
+	this->send_node(ip_num, sc.buf, sc.len);
 }
 
 void Ilms::proc_lookup_down()

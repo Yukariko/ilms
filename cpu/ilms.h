@@ -18,6 +18,7 @@
 
 #define BUF_SIZE 256
 #define PORT 7979
+#define REFRESH_PORT 7980
 #define DATA_SIZE 24
 #define NTHREAD 64U
 #define DB_PATH "./db"
@@ -29,7 +30,8 @@ public:
 	~Ilms();
 
 	void start();
-	static void send(unsigned long ip_num,const char *buf,int len);
+	static void send_node(unsigned long ip_num,const char *buf,int len);
+	void send_refresh(unsigned long ip_num, unsigned char *filter);
 	int send_child(char *data);
 	int send_child(unsigned long ip_num, char *data);
 	int send_peer(char *data);
@@ -62,29 +64,32 @@ public:
 	void child_run(unsigned int i);
 	void peer_run(unsigned int i);
 	void stat_run();
+	void refresh_run();
 
 	//test
 	void test_process();
 
 private:
-	leveldb::DB* db;
-	leveldb::Options options;
+	static leveldb::DB* db;
+	static leveldb::Options options;
 
 
 	static Bloomfilter *my_filter;
 	static Bloomfilter **child_filter;
 	static Bloomfilter **peer_filter;
+	static Bloomfilter *shadow_filter;
 
 	static Scanner sc;
 
 	static std::atomic<int> global_counter;
 	std::thread stat;
+	std::thread refresh;
 
 	static std::atomic<int> protocol[100];
 
-	static long long bitArray[12];
+	static long long *bitArray;
 	static int sock;
-	static struct sockaddr_in serv_adr;
+	static struct sockaddr_in serv_adr, ref_adr;
 };
 
 #endif

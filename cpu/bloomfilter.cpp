@@ -79,3 +79,19 @@ void Bloomfilter::getBitArray(long long *bitArray, char *data)
 		bitArray[i] = hash[i](data) % size;
 	}
 }
+
+void Bloomfilter::zeroFilter()
+{
+	memset((void *)filter, 0, size / 8 + 1);
+}
+
+void Bloomfilter::mergeFilter(unsigned char *hostFilter)
+{
+	for(int i=0, e = size / 8 + 1; i < e; i++)
+		filter[i] |= hostFilter[i];
+}
+
+void Bloomfilter::setFilter(unsigned char *hostFilter)
+{
+	memcpy((void *)filter, (const void *)hostFilter, size / 8 + 1);
+}
