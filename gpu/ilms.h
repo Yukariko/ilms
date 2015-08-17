@@ -86,7 +86,7 @@ private:
 
 	static Scanner sc;
 
-	static std::atomic<bool> global_counter;
+	static std::atomic<int> global_counter;
 	static std::atomic<bool> global_switch;
 	std::thread stat;
 	std::thread refresh;
