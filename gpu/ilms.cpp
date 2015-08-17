@@ -26,6 +26,10 @@
 #define MARK_DOWN									0x00
 
 
+#define NOREFRESH							0x00
+#define MYREFRESH							0x01
+#define CHILDREFRESH					0x02
+
 //#define MODE 1
 #ifdef MODE
 #define DEBUG(s) (std::cout << s << std::endl)
@@ -67,7 +71,7 @@ Bloomfilter* Ilms::shadow_filter;
 
 Scanner Ilms::sc;
 std::atomic<int> Ilms::global_counter;
-std::atomic<bool> Ilms::global_switch;
+std::atomic<int> Ilms::global_switch;
 std::atomic<int> Ilms::protocol[100];
 
 long long *Ilms::bitArray;
@@ -261,7 +265,7 @@ void Ilms::stat_run()
 
 void Ilms::refresh_run()
 {
-	global_switch = false;
+	global_switch = NOREFRESH;
 	if(child.size() > 0)
 	{
 		int sd = socket(PF_INET, SOCK_STREAM, 0);
@@ -306,17 +310,22 @@ void Ilms::refresh_run()
 				fpt += len;
 
 			close(ns);
-			global_switch = true;
+			global_switch = CHILDREFRESH;
 			shadow_filter->setFilter(filter);
 
 			for(unsigned int i=0; i < child.size(); i++)
 			{
 				if(child[i].get_ip_num() == ip_num)
+				{
 					child_filter[i]->setFilter(filter);
-				else
-					shadow_filter->mergeFilter(child_filter[i]->filter);
+					break;
+				}
 			}
 
+			global_switch = NOREFRESH;
+			shadow_filter->zeroFilter();
+
+			global_switch = MYREFRESH;
 			leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
 			for(it->SeekToFirst(); it->Valid(); it->Next())
 			{
@@ -328,7 +337,16 @@ void Ilms::refresh_run()
 			assert(it->status().ok());	// Check for any errors found during the scan
 			delete it;
 
-			global_switch = false;
+			global_switch = NOREFRESH;
+
+			my_filter->zeroFilter();
+			my_filter->mergeFilter(shadow_filter->filter);
+
+			global_switch = CHILDREFRESH;
+			for(unsigned int i=0; i < child.size(); i++)
+				shadow_filter->mergeFilter(child_filter[i]->filter);
+			
+			global_switch = NOREFRESH;
 			shadow_filter->copyFilter(filter);
 			send_refresh(parent->get_ip_num(), filter);
 		}
@@ -340,7 +358,7 @@ void Ilms::refresh_run()
 		{
 			
 			sleep(10);
-			global_switch = true;
+			global_switch = MYREFRESH;
 			shadow_filter->zeroFilter();
 
 			leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
@@ -354,8 +372,11 @@ void Ilms::refresh_run()
 			assert(it->status().ok());	// Check for any errors found during the scan
 			delete it;
 
-			global_switch = false;
+			global_switch = NOREFESH;
+
 			shadow_filter->copyFilter(filter);
+			my_filter->setFilter(filter);
+			
 			send_refresh(parent->get_ip_num(), filter);
 		}
 	}
@@ -544,7 +565,7 @@ void Ilms::proc_bf_update(unsigned long ip_num)
 			child_filter[i]->insert(data);
 			find = true;
 
-			if(global_switch == true)
+			if(global_switch == CHILDREFRESH)
 				shadow_filter->insert(data);
 			break;
 		}
@@ -680,7 +701,7 @@ void Ilms::req_id_register(unsigned long ip_num)
 	my_filter->insert(data);
 	insert(data,DATA_SIZE,value,0);
 
-	if(global_switch == true)
+	if(global_switch == MYREFRESH)
 		shadow_filter->insert(data);
 
 	sc.buf[0] = CMD_BF_UPDATE;

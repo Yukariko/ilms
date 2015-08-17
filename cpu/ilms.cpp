@@ -24,6 +24,9 @@
 #define MARK_UP										0x01
 #define MARK_DOWN									0x00
 
+#define NOREFRESH							0x00
+#define MYREFRESH							0x01
+#define CHILDREFRESH					0x02
 
 //#define MODE 1
 #ifdef MODE
@@ -255,7 +258,7 @@ void Ilms::stat_run()
 
 void Ilms::refresh_run()
 {
-	global_switch = false;
+	global_switch = NOREFRESH;
 	if(child.size() > 0)
 	{
 		int sd = socket(PF_INET, SOCK_STREAM, 0);
@@ -299,15 +302,20 @@ void Ilms::refresh_run()
 				fpt += len;
 
 			close(ns);
-			global_switch = true;
+			global_switch = CHILDREFRESH;
 			for(unsigned int i=0; i < child.size(); i++)
 			{
 				if(child[i].get_ip_num() == ip_num)
+				{
 					child_filter[i]->setFilter(shadow_filter->filter);
-				else
-					shadow_filter->mergeFilter(child_filter[i]->filter);
+					break;
+				}
 			}
 
+			global_switch = NOREFRESH;
+			shadow_filter->zeroFilter();
+
+			global_switch = MYREFRESH;
 			leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
 			for(it->SeekToFirst(); it->Valid(); it->Next())
 			{
@@ -318,7 +326,15 @@ void Ilms::refresh_run()
 			}
 			assert(it->status().ok());	// Check for any errors found during the scan
 			delete it;
-			global_switch = false;
+			global_switch = NOREFRESH;
+
+			my_filter->setFilter(shadow_filter->filter);
+
+			global_switch = CHILDREFRESH;
+			for(unsigned int i=0; i < child.size(); i++)
+				shadow_filter->mergeFilter(child_filter[i]->filter);
+			
+			global_switch = NOREFRESH;
 			send_refresh(parent->get_ip_num(), shadow_filter->filter);
 		}
 	}
@@ -328,7 +344,7 @@ void Ilms::refresh_run()
 		{
 
 			sleep(10);
-			global_switch = true;
+			global_switch = MYREFRESH;
 			shadow_filter->zeroFilter();
 
 
@@ -343,7 +359,8 @@ void Ilms::refresh_run()
 			assert(it->status().ok());	// Check for any errors found during the scan
 			delete it;
 
-			global_switch = false;
+			global_switch = NOREFESH;
+			my_filter->setFilter(shadow_filter->filter);
 
 			test_filter();
 			send_refresh(parent->get_ip_num(), shadow_filter->filter);
@@ -507,7 +524,7 @@ void Ilms::proc_bf_update(unsigned long ip_num)
 			child_filter[i]->insert(data);
 			find = true;
 
-			if(global_switch == true)
+			if(global_switch == CHILDREFRESH)
 				shadow_filter->insert(data);
 			break;
 		}
@@ -643,7 +660,7 @@ void Ilms::req_id_register(unsigned long ip_num)
 	my_filter->insert(data);
 	insert(data,DATA_SIZE,value,0);
 
-	if(global_switch == true)
+	if(global_switch == MYREFRESH)
 		shadow_filter->insert(data);
 
 	sc.buf[0] = CMD_BF_UPDATE;
