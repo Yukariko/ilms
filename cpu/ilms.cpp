@@ -69,7 +69,7 @@ Bloomfilter* Ilms::shadow_filter;
 
 Scanner Ilms::sc;
 std::atomic<int> Ilms::global_counter;
-std::atomic<bool> Ilms::global_switch;
+std::atomic<int> Ilms::global_switch;
 std::atomic<int> Ilms::protocol[100];
 
 long long Ilms::bitArray[12];
