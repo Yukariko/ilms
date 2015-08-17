@@ -372,7 +372,7 @@ void Ilms::refresh_run()
 			assert(it->status().ok());	// Check for any errors found during the scan
 			delete it;
 
-			global_switch = NOREFESH;
+			global_switch = NOREFRESH;
 
 			shadow_filter->copyFilter(filter);
 			my_filter->setFilter(filter);
