@@ -338,7 +338,7 @@ void Ilms::refresh_run()
 		unsigned char *filter = new unsigned char[defaultSize / 8 + 1];
 		while(1)
 		{
-			global_switch = false;
+			
 			sleep(10);
 			global_switch = true;
 			shadow_filter->zeroFilter();
@@ -354,6 +354,7 @@ void Ilms::refresh_run()
 			assert(it->status().ok());	// Check for any errors found during the scan
 			delete it;
 
+			global_switch = false;
 			shadow_filter->copyFilter(filter);
 			send_refresh(parent->get_ip_num(), filter);
 		}

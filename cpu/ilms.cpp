@@ -66,7 +66,7 @@ Bloomfilter* Ilms::shadow_filter;
 
 Scanner Ilms::sc;
 std::atomic<int> Ilms::global_counter;
-
+std::atomic<bool> Ilms::global_switch;
 std::atomic<int> Ilms::protocol[100];
 
 long long Ilms::bitArray[12];
@@ -145,6 +145,17 @@ void Ilms::test_process()
 			}
 		}
 	}
+}
+
+void Ilms::test_filter()
+{
+	for(long long i=0; i < defaultSize / 8; i++)
+		if(my_filter->filter[i] != shadow_filter->filter[i])
+		{
+			std::cout << "Refresh Error!" << std::endl;
+			return;
+		}
+	std::cout << "Refresh OK!" << std::endl;
 }
 
 /*
@@ -244,6 +255,7 @@ void Ilms::stat_run()
 
 void Ilms::refresh_run()
 {
+	global_switch = false;
 	if(child.size() > 0)
 	{
 		int sd = socket(PF_INET, SOCK_STREAM, 0);
@@ -287,7 +299,7 @@ void Ilms::refresh_run()
 				fpt += len;
 
 			close(ns);
-
+			global_switch = true;
 			for(unsigned int i=0; i < child.size(); i++)
 			{
 				if(child[i].get_ip_num() == ip_num)
@@ -306,7 +318,7 @@ void Ilms::refresh_run()
 			}
 			assert(it->status().ok());	// Check for any errors found during the scan
 			delete it;
-
+			global_switch = false;
 			send_refresh(parent->get_ip_num(), shadow_filter->filter);
 		}
 	}
@@ -314,8 +326,11 @@ void Ilms::refresh_run()
 	{
 		while(1)
 		{
+
 			sleep(10);
+			global_switch = true;
 			shadow_filter->zeroFilter();
+
 
 			leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
 			for(it->SeekToFirst(); it->Valid(); it->Next())
@@ -328,6 +343,9 @@ void Ilms::refresh_run()
 			assert(it->status().ok());	// Check for any errors found during the scan
 			delete it;
 
+			global_switch = false;
+
+			test_filter();
 			send_refresh(parent->get_ip_num(), shadow_filter->filter);
 		}
 	}
@@ -488,6 +506,9 @@ void Ilms::proc_bf_update(unsigned long ip_num)
 		{
 			child_filter[i]->insert(data);
 			find = true;
+
+			if(global_switch == true)
+				shadow_filter->insert(data);
 			break;
 		}
 	}
@@ -621,6 +642,9 @@ void Ilms::req_id_register(unsigned long ip_num)
 
 	my_filter->insert(data);
 	insert(data,DATA_SIZE,value,0);
+
+	if(global_switch == true)
+		shadow_filter->insert(data);
 
 	sc.buf[0] = CMD_BF_UPDATE;
 	this->send_node(parent->get_ip_num(), sc.buf, sc.len);

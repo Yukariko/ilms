@@ -68,6 +68,7 @@ public:
 
 	//test
 	void test_process();
+	void test_filter();
 
 private:
 	static leveldb::DB* db;
@@ -82,6 +83,7 @@ private:
 	static Scanner sc;
 
 	static std::atomic<int> global_counter;
+	static std::atomic<bool> global_switch;
 	std::thread stat;
 	std::thread refresh;
 
