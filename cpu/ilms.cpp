@@ -360,9 +360,9 @@ void Ilms::refresh_run()
 			delete it;
 
 			global_switch = NOREFRESH;
-			my_filter->setFilter(shadow_filter->filter);
-
 			test_filter();
+			
+			my_filter->setFilter(shadow_filter->filter);
 			send_refresh(parent->get_ip_num(), shadow_filter->filter);
 		}
 	}
