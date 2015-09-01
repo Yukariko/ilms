@@ -50,10 +50,10 @@ int main()
 			if(cin >> data)
 			{
 				len = ilms.req_lookup(data, value);
-				if(len == 1)
-					cout << "No LOC" << endl;
-				else if(len == -1)
+				if(len == -1)
 					cout << "No ID" << endl;
+				else if(len < 2)
+					cout << "No LOC" << endl;
 				else
 					cout << value << endl;
 			}
