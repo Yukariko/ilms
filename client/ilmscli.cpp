@@ -52,7 +52,7 @@ bool IlmsCli::req_id_register(const string& id, const string& loc)
 	int len=0;
 
 	header[len++] = REQ_ID_REGISTER;
-	for(int i=0; i < ID_SIZE; i++)
+	for(size_t i=0; i < ID_SIZE; i++)
 	{
 		if(i < id.size())
 			header[len++] = id[i];
@@ -81,7 +81,7 @@ bool IlmsCli::req_loc_update(char mode, const string& id, const string& loc)
 
 	header[len++] = REQ_LOC_UPDATE;
 	header[len++] = mode;
-	for(int i=0; i < ID_SIZE; i++)
+	for(size_t i=0; i < ID_SIZE; i++)
 	{
 		if(i < id.size())
 			header[len++] = id[i];
@@ -109,7 +109,7 @@ int IlmsCli::req_lookup(const string& id, string& buf)
 	int len=0;
 	
 	header[len++] = REQ_LOOKUP;
-	for(int i=0; i < ID_SIZE; i++)
+	for(size_t i=0; i < ID_SIZE; i++)
 	{
 		if(i < id.size())
 			header[len++] = id[i];
@@ -135,7 +135,7 @@ bool IlmsCli::req_id_deregister(const string& id)
 	int len=0;
 
 	header[len++] = REQ_ID_DEREGISTER;
-	for(int i=0; i < ID_SIZE; i++)
+	for(size_t i=0; i < ID_SIZE; i++)
 	{
 		if(i < id.size())
 			header[len++] = id[i];
