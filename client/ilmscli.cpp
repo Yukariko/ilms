@@ -121,6 +121,8 @@ int IlmsCli::req_lookup(const string& id, string& buf)
 	len = this->recieve(header);
 	if(len < 0)
 		return -1;
+
+	header[len] = 0;
 	buf = header + ID_SIZE + 1;
 	return buf.length();
 }
