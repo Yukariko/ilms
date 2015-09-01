@@ -9,31 +9,29 @@
 #define PORT 7979
 #define MYPORT 7979
 #define BUF_SIZE 256
-#define DATA_SIZE 24
+#define ID_SIZE 24
+
+using namespace std;
 
 class IlmsCli 
 {
 public:
-	IlmsCli(std::string ip);
+	IlmsCli(string ip);
 
-	void setIp(std::string ip);
-
-
-	void req_id_register(char *data,std::string ip);
-	void req_loc_update(char mode, char *data,std::string ip);
-	void req_id_deregister(char *data);
-	int req_lookup(char *data,char *buf);
-
+	void set_ip(const string& ip);
+	bool req_id_register(const string& id, const string& loc);
+	bool req_loc_update(char mode, const string& id, const string& loc);
+	bool req_id_deregister(const string& id);
+	int req_lookup(const string& id, string& buf);
 
 	void send(const char *buf,int len);
 	int recieve(char *buf);
-
 	void error_handling(const char *message);
 
 private:
 	int sock;
 	struct sockaddr_in serv_adr;
-	std::string ip;
+	string ip;
 };
 
 

@@ -13,7 +13,7 @@
  * 요청을 전달할 노드의 ip를 설정하고 자신의 소켓 초기화
  */
 
-IlmsCli::IlmsCli(std::string ip)
+IlmsCli::IlmsCli(string ip)
 {
 	this->ip = ip;
 
@@ -26,6 +26,12 @@ IlmsCli::IlmsCli(std::string ip)
 	serv_adr.sin_addr.s_addr = htonl(INADDR_ANY);
 	serv_adr.sin_port = htons(MYPORT);
 
+	struct timeval tv;
+	tv.tv_sec = 5;
+	tv.tv_usec = 0;
+
+	setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+
 	if(bind(sock, (struct sockaddr *)&serv_adr, sizeof(serv_adr)) == -1)
 		error_handling("bind() error");
 
@@ -35,26 +41,32 @@ IlmsCli::IlmsCli(std::string ip)
  * ip설정. 다른노드로 이동할 때 쓰임
  */
 
-void IlmsCli::setIp(std::string ip)
+void IlmsCli::set_ip(const string& ip)
 {
 	this->ip = ip;
 }
 
-void IlmsCli::req_id_register(char *data,std::string ip)
+bool IlmsCli::req_id_register(const string& id, const string& loc)
 {
-	char header[256];
+	char header[BUF_SIZE];
 	int len=0;
 
 	header[len++] = REQ_ID_REGISTER;
-	for(int i=0; i < 24; i++)
-		header[len++] = data[i];
+	for(int i=0; i < ID_SIZE; i++)
+	{
+		if(i < id.size())
+			header[len++] = id[i];
+		else
+			header[len++] = 0;
+	}
 	
-	header[len] = ip.length() + 1;
-	strcpy(header+len+1,ip.c_str());
+	header[len] = loc.length() + 1;
+	strcpy(header+len+1, loc.c_str());
 
 	len += header[len] + 1;
 
 	this->send(header,len);
+	return this->recieve(header) == len;
 }
 
 
@@ -62,22 +74,28 @@ void IlmsCli::req_id_register(char *data,std::string ip)
  * 데이터 추가 요청
  */
 
-void IlmsCli::req_loc_update(char mode, char *data,std::string ip)
+bool IlmsCli::req_loc_update(char mode, const string& id, const string& loc)
 {
-	char header[256];
+	char header[BUF_SIZE];
 	int len=0;
 
 	header[len++] = REQ_LOC_UPDATE;
 	header[len++] = mode;
-	for(int i=0; i < 24; i++)
-		header[len++] = data[i];
+	for(int i=0; i < ID_SIZE; i++)
+	{
+		if(i < id.size())
+			header[len++] = id[i];
+		else
+			header[len++] = 0;
+	}
 	
-	header[len] = ip.length() + 1;
-	strcpy(header+len+1,ip.c_str());
+	header[len] = loc.length() + 1;
+	strcpy(header+len+1, loc.c_str());
 
 	len += header[len] + 1;
 
 	this->send(header,len);
+	return this->recieve(header) == len;
 }
 
 /*
@@ -85,37 +103,48 @@ void IlmsCli::req_loc_update(char mode, char *data,std::string ip)
  * 검색 결과를 받을때까지 기다림 
  */
 
-int IlmsCli::req_lookup(char *data, char *buf)
+int IlmsCli::req_lookup(const string& id, string& buf)
 {
 	char header[BUF_SIZE];
 	int len=0;
 	
 	header[len++] = REQ_LOOKUP;
-	for(int i=0; i < 24; i++)
-		header[len++] = data[i];
-	
+	for(int i=0; i < ID_SIZE; i++)
+	{
+		if(i < id.size())
+			header[len++] = id[i];
+		else
+			header[len++] = 0;
+	}	
 
 	this->send(header,len);
-	len = this->recieve(buf);
-	memcpy(buf, buf + DATA_SIZE + 1, len - DATA_SIZE - 1);
-	return len - DATA_SIZE - 1;
+	len = this->recieve(header);
+	if(len < 0)
+		return -1;
+	buf = header + ID_SIZE + 1;
+	return buf.length();
 }
 
 /*
  * 데이터 삭제 요청
  */
 
-void IlmsCli::req_id_deregister(char *data)
+bool IlmsCli::req_id_deregister(const string& id)
 {
 	char header[BUF_SIZE];
 	int len=0;
 
 	header[len++] = REQ_ID_DEREGISTER;
-	for(int i=0; i < 24; i++)
-		header[len++] = data[i];
-
+	for(int i=0; i < ID_SIZE; i++)
+	{
+		if(i < id.size())
+			header[len++] = id[i];
+		else
+			header[len++] = 0;
+	}
 
 	this->send(header,len);
+	return this->recieve(header) == len;
 }
 
 /*
@@ -133,8 +162,6 @@ void IlmsCli::send(const char *buf,int len)
 	clnt_adr.sin_port = htons(PORT);
  
 	sendto(sock, buf, len, 0, (struct sockaddr *)&clnt_adr, clnt_adr_sz);
-
-	std::cout << "Send OK!" << std::endl;
 }
 
 /*
@@ -145,8 +172,6 @@ int IlmsCli::recieve(char *buf)
 {
 	struct sockaddr_in clnt_adr;
 	socklen_t clnt_adr_sz = sizeof(clnt_adr);
-
-	std::cout << "Recieve OK!" << std::endl;
 
 	return recvfrom(sock, buf, BUF_SIZE, 0,(struct sockaddr*)&clnt_adr, &clnt_adr_sz);
 }
