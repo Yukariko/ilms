@@ -659,7 +659,7 @@ void Ilms::req_id_register(unsigned long ip_num)
 
 	my_filter->insert(data);
 
-	string loc = ":";
+	std::string loc = ":";
 	loc += value;
 
 	insert(data,DATA_SIZE, loc.c_str(), loc.size());
