@@ -35,7 +35,8 @@ int main()
 		case REG:
 			if(cin >> data)
 			{
-				if(getline(cin, value))
+				getline(cin, value);
+				if(value.size())
 					ret = ilms.req_id_register(data, value.substr(1));
 				else
 					ret = ilms.req_id_register(data, value);
