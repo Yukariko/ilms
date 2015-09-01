@@ -6,7 +6,7 @@ bin = ilms_show
 
 t1 = show_id
 
-obj = $(t1).o $(t2).o $(t3).o $(t4).o $(t5).o
+obj = $(t1).o
 
 all: $(bin)
 $(bin): $(obj)
