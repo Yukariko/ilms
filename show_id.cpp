@@ -7,6 +7,8 @@
 #define DB_PATH "./db"
 #define DATA_SIZE 24
 
+using namespace std;
+
 int main()
 {
 	leveldb::DB* db;
