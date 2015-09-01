@@ -699,7 +699,11 @@ void Ilms::req_id_register(unsigned long ip_num)
 		return;
 
 	my_filter->insert(data);
-	insert(data,DATA_SIZE,value,*(unsigned char *)(value-1));
+
+	string loc = ":";
+	loc += value;
+
+	insert(data,DATA_SIZE, loc.c_str(), loc.size());
 
 	if(global_switch == MYREFRESH)
 		shadow_filter->insert(data);
