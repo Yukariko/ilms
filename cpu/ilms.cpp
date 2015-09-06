@@ -91,7 +91,7 @@ Ilms::Ilms()
 {
 	// bloomfilter init
 	long long (*hash[11])(const char *) = {test,test2,test3,test4,test5,test6,test7,test8,test9,test10,test11};
-	
+
 	my_filter = new Bloomfilter(defaultSize, 11, hash);
 	shadow_filter = new Bloomfilter(defaultSize, 11, hash);
 
@@ -106,9 +106,9 @@ Ilms::Ilms()
 	{
 		peer_filter = new Bloomfilter*[peered.size()];
 		for(unsigned int i=0; i < peered.size(); i++)
-			peer_filter[i] = new Bloomfilter(defaultSize, 11, hash);	
+			peer_filter[i] = new Bloomfilter(defaultSize, 11, hash);
 	}
-	
+
 	// socket init
 	sock = socket(PF_INET, SOCK_DGRAM, 0);
 	if(sock == -1)
@@ -185,11 +185,12 @@ void Ilms::start()
 {
 	char buf[BUF_SIZE];
 
-	struct sockaddr_in clnt_adr; 
+	struct sockaddr_in clnt_adr;
 	socklen_t clnt_adr_sz;
 
 	stat = std::thread(&Ilms::stat_run,this);
 	refresh = std::thread(&Ilms::refresh_run, this);
+	cmd = std::thread(&Ilms::cmd_run, this);
 
 	while(1)
 	{
@@ -288,7 +289,7 @@ void Ilms::refresh_run()
 			perror("listen");
 			exit(1);
 		}
-	
+
 		int ns;
 		struct sockaddr_in cli;
 		int clientlen;
@@ -333,7 +334,7 @@ void Ilms::refresh_run()
 			global_switch = CHILDREFRESH;
 			for(unsigned int i=0; i < child.size(); i++)
 				shadow_filter->mergeFilter(child_filter[i]->filter);
-			
+
 			global_switch = NOREFRESH;
 			send_refresh(parent->get_ip_num(), shadow_filter->filter);
 		}
@@ -342,11 +343,9 @@ void Ilms::refresh_run()
 	{
 		while(1)
 		{
-
-			sleep(10);
+			sleep(REFRESH_FREQUENCY);
 			global_switch = MYREFRESH;
 			shadow_filter->zeroFilter();
-
 
 			leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
 			for(it->SeekToFirst(); it->Valid(); it->Next())
@@ -361,9 +360,31 @@ void Ilms::refresh_run()
 
 			global_switch = NOREFRESH;
 			test_filter();
-			
+
 			my_filter->setFilter(shadow_filter->filter);
 			send_refresh(parent->get_ip_num(), shadow_filter->filter);
+		}
+	}
+}
+
+void Ilms::cmd_run()
+{
+	std::string c;
+	while(1)
+	{
+		std::cin >> c;
+		if(c == "show mdb")
+		{
+			leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
+			for(it->SeekToFirst(); it->Valid(); it->Next())
+			{
+				std::string key = it->key().ToString();
+				if(key.length() != DATA_SIZE)
+					continue;
+				std::cout << key.c_str() << " - " << it->value().ToString() << std::endl;
+			}
+			assert(it->status().ok());	// Check for any errors found during the scan
+			delete it;
 		}
 	}
 }
@@ -420,8 +441,8 @@ void Ilms::send_refresh(unsigned long ip_num, unsigned char *filter)
 	unsigned char *endf = filter + defaultSize / 8 + 1;
 
 	for(int len; endf - fpt > 0 && (len = send(sd, fpt, std::min(4096, (int)(endf - fpt)), 0)) > 0;)
-		fpt += len; 
-	
+		fpt += len;
+
 
 	close(sd);
 
@@ -538,7 +559,7 @@ void Ilms::proc_bf_update(unsigned long ip_num)
  * 데이터 검색. 다음의 순서로 동작
  * 1) 자신의 필터에 데이터가 있다면 자신의 DB에서 검색. 검색 결과가 있다면 처음 노드에 직접 전송
  * 2) 없다면 자식 필터를 확인하고, 있다면 자식들에 대해 검색 전송
- * 3) 자식필터에 데이터가 없다면 부모노드로 올라감. 부모노드에서 내려온 상태라면 부모에 검색 실패 전송 
+ * 3) 자식필터에 데이터가 없다면 부모노드로 올라감. 부모노드에서 내려온 상태라면 부모에 검색 실패 전송
  */
 
 void Ilms::proc_lookup(unsigned long ip_num)
@@ -633,7 +654,7 @@ void Ilms::proc_lookup_nack()
 	if(--count == 0)
 	{
 		remove(data,DATA_SIZE+4);
-		
+
 		*(unsigned long *)p_depth = htonl(depth-1);
 
 		if(depth == 1)

@@ -22,6 +22,7 @@
 #define DATA_SIZE 24
 #define NTHREAD 64U
 #define DB_PATH "./db"
+#define REFRESH_FREQUENCY 60
 
 class Ilms : public Tree
 {
@@ -59,12 +60,13 @@ public:
 	void peer_bf_update(unsigned long ip_num);
 	void peer_lookup(unsigned long ip_num);
 	void peer_lookup_down();
-	
+
 	//thread
 	void child_run(unsigned int i);
 	void peer_run(unsigned int i);
 	void stat_run();
 	void refresh_run();
+	void cmd_run();
 
 	//test
 	void test_process();
@@ -86,6 +88,7 @@ private:
 	static std::atomic<int> global_switch;
 	std::thread stat;
 	std::thread refresh;
+	std::thread cmd;
 
 	static std::atomic<int> protocol[100];
 

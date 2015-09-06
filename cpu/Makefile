@@ -1,6 +1,6 @@
 LIBPATH = /root/kangmin/leveldb-master
 CPPFLAGS = -Wall -O -std=c++0x -g -L$(LIBPATH) -I $(LIBPATH)/include
-LDFLAGS = -lleveldb
+LDFLAGS = -lleveldb -lpthread
 
 bin = ilms
 
