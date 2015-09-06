@@ -13,7 +13,8 @@ ilmscli - ilms client
 .\"{{{ Synopsis
 .SH SYNOPSIS
 .B ./ilmscli
-.br
+
+.SH COMMAND Line OPERATION
 .BR IP
 .BR IP_ADDRESS
 .br
@@ -46,6 +47,29 @@ ilmscli - ilms client
 .\"{{{ Description
 .SH DESCRIPTION
 .B ilmscli
-ilms cli
-
+ilms client program
+.br
+.B IP
+ip를 설정합니다. ip_address는 x.x.x.x의 형식을 사용합니다. 
+.br
+.B REG
+ID를 등록합니다. ID는 string형이며, 프로그램내에서 24B의 binary로 인코딩됩니다. LOC정보는 포함하지 않아도 됩니다.
+.br
+.B SET
+ID에 LOC정보를 추가합니다.
+.br
+.B GET
+ID를 검색합니다.
+.br
+.B REP
+ID의 LOC정보를 주어지는 LOC정보로 교체합니다. 이때 LOC정보는 구분자가 포함되어야 합니다.
+.br
+.B SUB
+ID의 LOC정보 중 주어지는 LOC정보를 제거합니다.
+.br
+.B DELETE
+ID를 제거합니다.
+.br
+.B EXIT
+ilmscli를 종료합니다. 
 .\"}}}
