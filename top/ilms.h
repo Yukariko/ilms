@@ -18,11 +18,11 @@
 
 #define BUF_SIZE 256
 #define PORT 7979
-
-#define NTHREAD 64U
+#define REFRESH_PORT 7980
 #define DATA_SIZE 24
-
+#define NTHREAD 64U
 #define DB_PATH "./db"
+#define REFRESH_FREQUENCY 60
 
 class Ilms : public Tree
 {
@@ -31,7 +31,8 @@ public:
 	~Ilms();
 
 	void start();
-	static void send(unsigned long ip_num,const char *buf,int len);
+	static void send_node(unsigned long ip_num,const char *buf,int len);
+	void send_refresh(unsigned long ip_num, unsigned char *filter);
 	int send_child(char *data);
 	int send_child(unsigned long ip_num, char *data);
 	int send_peer(char *data);
@@ -49,8 +50,8 @@ public:
 	void proc_lookup_nack();
 
 	//request
-	void req_id_register();
-	void req_loc_update();
+	void req_id_register(unsigned long ip_num);
+	void req_loc_update(unsigned long ip_num);
 	void req_lookup(unsigned long ip_num);
 	void req_id_deregister(unsigned long ip_num);
 
@@ -63,30 +64,36 @@ public:
 	void top_lookup();
 
 	//thread
-	void top_run(unsigned int i);
-	void child_run(unsigned int i);
-	void peer_run(unsigned int i);
-
+	void stat_run();
+	void refresh_run();
+	void cmd_run();
+	
 	//test
 	void test_process();
 
 private:
 
-	leveldb::DB* db;
-	leveldb::Options options;
+	static leveldb::DB* db;
+	static leveldb::Options options;
 
 
 	static Bloomfilter *my_filter;
 	static Bloomfilter **child_filter;
 	static Bloomfilter **top_filter;
 	static Bloomfilter **peer_filter;
+	static Bloomfilter *shadow_filter;
 
-	static Scanner sc;
 	static std::atomic<int> global_counter;
-	std::thread task[NTHREAD];
+	static std::atomic<int> global_switch;
+	std::thread stat;
+	std::thread refresh;
+	std::thread cmd;
+
+	static std::atomic<int> protocol[100];
+
 	static long long bitArray[12];
 	static int sock;
-	static struct sockaddr_in serv_adr;
+	static struct sockaddr_in serv_adr, ref_adr;
 };
 
 #endif

@@ -27,6 +27,9 @@
 #define MARK_UP										0x01
 #define MARK_DOWN									0x00
 
+#define NOREFRESH							0x00
+#define MYREFRESH							0x01
+#define CHILDREFRESH					0x02
 
 #define MODE 1
 #ifdef MODE
@@ -43,18 +46,17 @@
 
 const long long defaultSize = 8LL * 2 * 1024 * 1024;
 
-long long test(char *data){return (*(unsigned short *)(data + 0) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 0;}
-long long test2(char *data){return (*(unsigned short *)(data + 2) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 1;}
-long long test3(char *data){return (*(unsigned short *)(data + 4) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 2;}
-long long test4(char *data){return (*(unsigned short *)(data + 6) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 3;;}
-long long test5(char *data){return (*(unsigned short *)(data + 8) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 4;;}
-long long test6(char *data){return (*(unsigned short *)(data + 10) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 5;;}
-long long test7(char *data){return (*(unsigned short *)(data + 12) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 6;;}
-long long test8(char *data){return (*(unsigned short *)(data + 14) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 7;;}
-long long test9(char *data){return (*(unsigned short *)(data + 16) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 8;;}
-long long test10(char *data){return (*(unsigned short *)(data + 18) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 9;}
-long long test11(char *data){return (*(unsigned int *)(data + 20) * 1009LL);}
-
+long long test(const char *data){return (*(unsigned short *)(data + 0) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 0;}
+long long test2(const char *data){return (*(unsigned short *)(data + 2) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 1;}
+long long test3(const char *data){return (*(unsigned short *)(data + 4) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 2;}
+long long test4(const char *data){return (*(unsigned short *)(data + 6) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 3;;}
+long long test5(const char *data){return (*(unsigned short *)(data + 8) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 4;;}
+long long test6(const char *data){return (*(unsigned short *)(data + 10) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 5;;}
+long long test7(const char *data){return (*(unsigned short *)(data + 12) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 6;;}
+long long test8(const char *data){return (*(unsigned short *)(data + 14) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 7;;}
+long long test9(const char *data){return (*(unsigned short *)(data + 16) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 8;;}
+long long test10(const char *data){return (*(unsigned short *)(data + 18) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 9;}
+long long test11(const char *data){return (*(unsigned int *)(data + 20) * 1009LL);}
 
 /*
  * Ilms 생성자
@@ -65,6 +67,9 @@ long long test11(char *data){return (*(unsigned int *)(data + 20) * 1009LL);}
  * UDP 통신이며 포트는 7979
  */
 
+leveldb::DB* Ilms::db;
+leveldb::Options Ilms::options;
+
 std::vector<Node> Tree::top;
 std::vector<Node> Tree::child;
 std::vector<Node> Tree::peered;
@@ -72,21 +77,26 @@ std::vector<Node> Tree::peering;
 
 Bloomfilter* Ilms::my_filter;
 Bloomfilter** Ilms::child_filter;
-Bloomfilter** Ilms::top_filter;
 Bloomfilter** Ilms::peer_filter;
+Bloomfilter** Ilms::top_filter;
+Bloomfilter* Ilms::shadow_filter;
+
 Scanner Ilms::sc;
 std::atomic<int> Ilms::global_counter;
+std::atomic<int> Ilms::global_switch;
+std::atomic<int> Ilms::protocol[100];
+
 long long Ilms::bitArray[12];
 int Ilms::sock;
 struct sockaddr_in Ilms::serv_adr;
 
-
 Ilms::Ilms()
 {
 	// bloomfilter init
-	long long (*hash[11])(char *) = {test,test2,test3,test4,test5,test6,test7,test8,test9,test10,test11};
-	
+	long long (*hash[11])(const char *) = {test,test2,test3,test4,test5,test6,test7,test8,test9,test10,test11};
+
 	my_filter = new Bloomfilter(defaultSize, 11, hash);
+	shadow_filter = new Bloomfilter(defaultSize, 11, hash);
 
 	if(child.size())
 	{
@@ -178,6 +188,10 @@ void Ilms::start()
 	struct sockaddr_in clnt_adr; 
 	socklen_t clnt_adr_sz;
 
+	stat = std::thread(&Ilms::stat_run,this);
+	refresh = std::thread(&Ilms::refresh_run, this);
+	cmd = std::thread(&Ilms::cmd_run, this);
+
 	while(1)
 	{
 		clnt_adr_sz = sizeof(clnt_adr);
@@ -196,6 +210,9 @@ void Ilms::start()
 
 			DEBUG("Protocol OK!");
 
+			if(cmd >= 0 && cmd < 100)
+				protocol[cmd]++;
+
 			unsigned long ip_num = clnt_adr.sin_addr.s_addr;
 
 			switch(cmd)
@@ -204,8 +221,8 @@ void Ilms::start()
 			case CMD_LOOKUP: proc_lookup(ip_num); break;
 			case CMD_LOOKUP_NACK: proc_lookup_nack(); break;
 
-			case REQ_ID_REGISTER: req_id_register(); break;
-			case REQ_LOC_UPDATE: req_loc_update(); break;
+			case REQ_ID_REGISTER: req_id_register(ip_num); break;
+			case REQ_LOC_UPDATE: req_loc_update(ip_num); break;
 			case REQ_LOOKUP: req_lookup(ip_num); break;
 			case REQ_ID_DEREGISTER: req_id_deregister(ip_num); break;
 
@@ -219,14 +236,190 @@ void Ilms::start()
 	}
 }
 
+const int nProt[] = {
+	CMD_BF_UPDATE, CMD_LOOKUP, CMD_LOOKUP_NACK, CMD_LOOKUP_DOWN, REQ_ID_REGISTER,
+	REQ_LOC_UPDATE, REQ_LOOKUP, REQ_ID_DEREGISTER, PEER_BF_UPDATE, PEER_LOOKUP,
+	PEER_LOOKUP_DOWN, -1
+};
+
+const char *sProt[] = {
+	"CMD_BF_UPDATE", "CMD_LOOKUP", "CMD_LOOKUP_NACK", "CMD_LOOKUP_DOWN", "REQ_ID_REGISTER",
+	"REQ_LOC_UPDATE", "REQ_LOOKUP", "REQ_ID_DEREGISTER", "PEER_BF_UPDATE", "PEER_LOOKUP",
+	"PEER_LOOKUP_DOWN"
+};
+
+void Ilms::stat_run()
+{
+	while(1)
+	{
+		for(int i=0; nProt[i] != -1; i++)
+			std::cout << sProt[i] << " : " << protocol[nProt[i]] << std::endl;
+		sleep(60);
+	}
+}
+
+void Ilms::refresh_run()
+{
+	global_switch = NOREFRESH;
+	if(child.size() > 0)
+	{
+		int sd = socket(PF_INET, SOCK_STREAM, 0);
+		if(sd == -1)
+		{
+			perror("socket");
+			exit(1);
+		}
+
+		int option;
+		setsockopt(sd, SOL_SOCKET, SO_REUSEADDR, (void *)&option, 4);
+
+		struct sockaddr_in ref_adr;
+		memset(&ref_adr, 0, sizeof(ref_adr));
+		ref_adr.sin_family = PF_INET;
+		ref_adr.sin_addr.s_addr = htonl(INADDR_ANY);
+		ref_adr.sin_port = htons(REFRESH_PORT);
+
+		if(bind(sd, (struct sockaddr*)&ref_adr, sizeof(ref_adr)))
+		{
+			perror("bind");
+			exit(1);
+		}
+
+		if(listen(sd, 0xFFF))
+		{
+			perror("listen");
+			exit(1);
+		}
+
+		int ns;
+		struct sockaddr_in cli;
+		int clientlen;
+
+		while((ns = accept(sd, (struct sockaddr *)&cli,  (socklen_t *)&clientlen)) != -1)
+		{
+			unsigned long ip_num = cli.sin_addr.s_addr;
+
+			unsigned char *fpt = shadow_filter->filter;
+			for(int len; (len = recv(ns, fpt, 4096, 0)) > 0; )
+				fpt += len;
+
+			close(ns);
+			global_switch = CHILDREFRESH;
+			for(unsigned int i=0; i < child.size(); i++)
+			{
+				if(child[i].get_ip_num() == ip_num)
+				{
+					child_filter[i]->setFilter(shadow_filter->filter);
+					break;
+				}
+			}
+
+			global_switch = NOREFRESH;
+			shadow_filter->zeroFilter();
+
+			global_switch = MYREFRESH;
+			leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
+			for(it->SeekToFirst(); it->Valid(); it->Next())
+			{
+				std::string key = it->key().ToString();
+				if(key.length() != DATA_SIZE)
+					continue;
+				shadow_filter->insert(key.c_str());
+			}
+			assert(it->status().ok());	// Check for any errors found during the scan
+			delete it;
+			global_switch = NOREFRESH;
+
+			my_filter->setFilter(shadow_filter->filter);
+
+			global_switch = CHILDREFRESH;
+			for(unsigned int i=0; i < child.size(); i++)
+				shadow_filter->mergeFilter(child_filter[i]->filter);
+
+			global_switch = NOREFRESH;
+
+			for(size_t i=0; i < top.size(); i++)
+				send_refresh(top[i]->get_ip_num(), shadow_filter->filter);
+		}
+	}
+	else
+	{
+		while(1)
+		{
+			sleep(REFRESH_FREQUENCY);
+			global_switch = MYREFRESH;
+			shadow_filter->zeroFilter();
+
+			leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
+			for(it->SeekToFirst(); it->Valid(); it->Next())
+			{
+				std::string key = it->key().ToString();
+				if(key.length() != DATA_SIZE)
+					continue;
+				shadow_filter->insert(key.c_str());
+			}
+			assert(it->status().ok());	// Check for any errors found during the scan
+			delete it;
+
+			global_switch = NOREFRESH;
+			//test_filter();
+
+			for(size_t i=0; i < top.size(); i++)
+				send_refresh(top[i]->get_ip_num(), shadow_filter->filter);
+		}
+	}
+}
+
+void Ilms::cmd_run()
+{
+	std::string c;
+	while(1)
+	{
+		std::cin >> c;
+		if(c == "show")
+		{
+			std::cout << "--------------------" << std::endl;
+			leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
+			for(it->SeekToFirst(); it->Valid(); it->Next())
+			{
+				std::string key = it->key().ToString();
+				if(key.length() != DATA_SIZE)
+					continue;
+				std::cout << "[" << key.c_str() << "] " << it->value().ToString() << std::endl;
+			}
+			assert(it->status().ok());	// Check for any errors found during the scan
+			delete it;
+			std::cout << "--------------------" << std::endl;
+		}
+		else if(c == "crash")
+		{
+			leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
+			for(it->SeekToFirst(); it->Valid(); it->Next())
+			{
+				std::string key = it->key().ToString();
+				if(key.length() != DATA_SIZE)
+					continue;
+				leveldb::Status s = db->Delete(leveldb::WriteOptions(),leveldb::Slice(key.c_str(),DATA_SIZE));
+				assert(s.ok());
+			}
+			assert(it->status().ok());	// Check for any errors found during the scan
+			delete it;
+
+			std::cout << "delete complete" << std::endl;
+		}
+	}
+}
+
+
+
 /*
  * 버퍼 전송
  */
-
-void Ilms::send(unsigned long ip_num,const char *buf,int len)
+void Ilms::send_node(unsigned long ip_num,const char *buf,int len)
 {
 	if(ip_num==0)
 		return;
+
 	struct sockaddr_in clnt_adr;
 	socklen_t clnt_adr_sz = sizeof(clnt_adr);
 
@@ -235,38 +428,59 @@ void Ilms::send(unsigned long ip_num,const char *buf,int len)
 	clnt_adr.sin_addr.s_addr = ip_num;
 	clnt_adr.sin_port = htons(PORT);
 
-	sendto(sock, buf, len, 0, (struct sockaddr *)&clnt_adr, clnt_adr_sz);
+	sendto(Ilms::sock, buf, len, 0, (struct sockaddr *)&clnt_adr, clnt_adr_sz);
 
 	DEBUG("Send OK!");
 }
 
-void Ilms::child_run(unsigned int i)
+void Ilms::send_refresh(unsigned long ip_num, unsigned char *filter)
 {
-	if(child_filter[i]->lookBitArray(bitArray))
+	if(ip_num == 0)
+		return;
+
+	int sd = socket(PF_INET, SOCK_STREAM, 0);
+	if(sd == -1)
 	{
-		Ilms::send(child[i].get_ip_num(), sc.buf, sc.len);
-		Ilms::global_counter++;
+		perror("sock open");
+		exit(1);
 	}
+
+	struct sockaddr_in clnt_adr;
+
+	memset(&clnt_adr,0,sizeof(clnt_adr));
+	clnt_adr.sin_family = AF_INET;
+	clnt_adr.sin_addr.s_addr = ip_num;
+	clnt_adr.sin_port = htons(REFRESH_PORT);
+
+	if(connect(sd, (struct sockaddr *)&clnt_adr, sizeof(clnt_adr)) == -1)
+	{
+		perror("connect");
+		exit(1);
+	}
+
+	unsigned char *fpt = filter;
+	unsigned char *endf = filter + defaultSize / 8 + 1;
+
+	for(int len; endf - fpt > 0 && (len = send(sd, fpt, std::min(4096, (int)(endf - fpt)), 0)) > 0;)
+		fpt += len;
+
+
+	close(sd);
+
+	DEBUG("Refresh Send OK!");
+
 }
 
 int Ilms::send_child(char *data)
 {
 	int ret = 0;
-	for(unsigned int i=0; i < child.size();)
+	for(unsigned int i=0; i < child.size(); i++)
 	{
-		unsigned int range = std::min(NTHREAD, (unsigned int)child.size() - i);
-		global_counter = 0;
-
-		for(unsigned int j=0; j < range; j++, i++)
+		if(child_filter[i]->lookBitArray(bitArray))
 		{
-			task[j] = std::thread(&Ilms::child_run,this,i);
+			Ilms::send_node(child[i].get_ip_num(), sc.buf, sc.len);
+			ret++;
 		}
-
-		for(unsigned int j=0; j < range; j++)
-		{
-			task[j].join();
-		}
-		ret += global_counter;
 	}
 	return ret;
 }
@@ -274,38 +488,15 @@ int Ilms::send_child(char *data)
 int Ilms::send_child(unsigned long ip_num, char *data)
 {
 	int ret = 0;
-	for(unsigned int i=0; i < child.size();)
+	for(unsigned int i=0; i < child.size(); i++)
 	{
-		unsigned int range = std::min(NTHREAD, (unsigned int)child.size() - i);
-		global_counter = 0;
-
-		for(unsigned int j=0; j < range; j++, i++)
+		if(ip_num != child[i].get_ip_num() && child_filter[i]->lookBitArray(bitArray))
 		{
-			if(ip_num == child[i].get_ip_num())
-			{
-				j--;
-				range--;
-				continue;
-			}
-			task[j] = std::thread(&Ilms::child_run,this,i);
+			Ilms::send_node(child[i].get_ip_num(), sc.buf, sc.len);
+			ret++;
 		}
-
-		for(unsigned int j=0; j < range; j++)
-		{
-			task[j].join();
-		}
-		ret += global_counter;
 	}
 	return ret;
-}
-
-void Ilms::peer_run(unsigned int i)
-{
-	if(peer_filter[i]->lookBitArray(bitArray))
-	{
-		Ilms::send(peered[i].get_ip_num(), sc.buf, sc.len);
-		Ilms::global_counter++;
-	}
 }
 
 int Ilms::send_peer(char *data)
@@ -313,43 +504,20 @@ int Ilms::send_peer(char *data)
 	int ret = 0;
 	for(unsigned int i=0; i < peered.size();)
 	{
-		unsigned int range = std::min(NTHREAD, (unsigned int)peered.size() - i);
-		global_counter = 0;
-
-		for(unsigned int j=0; j < range; j++, i++)
-			task[j] = std::thread(&Ilms::peer_run,this,i);
-
-		for(unsigned int j=0; j < range; j++)
+		if(peer_filter[i]->lookBitArray(bitArray))
 		{
-			task[j].join();
+			Ilms::send_node(peered[i].get_ip_num(), sc.buf, sc.len);
+			ret++;
 		}
-		ret += global_counter;
 	}
 	return ret;
-}
-
-void Ilms::top_run(unsigned int i)
-{
-	if(top_filter[i]->lookBitArray(bitArray))
-	{
-		Ilms::send(top[i].get_ip_num(), sc.buf, sc.len);
-	}
 }
 
 void Ilms::send_top(char *data)
 {
 	for(unsigned int i=0; i < top.size();)
-	{
-		unsigned int range = std::min(NTHREAD, (unsigned int)top.size() - i);
-
-		for(unsigned int j=0; j < range; j++, i++)
-			task[j] = std::thread(&Ilms::top_run,this,i);
-
-		for(unsigned int j=0; j < range; j++)
-		{
-			task[j].join();
-		}
-	}
+		if(top_filter[i]->lookBitArray(bitArray))
+			Ilms::send_node(top[i].get_ip_num(), sc.buf, sc.len);
 }
 
 void Ilms::send_id(unsigned long ip_num, char *id, const char *ret, int len)
@@ -365,7 +533,7 @@ void Ilms::send_id(unsigned long ip_num, char *id, const char *ret, int len)
 	buf[pos++] = count;
 	strncpy(buf+pos,ret,len);
 	pos += len;
-	this->send(ip_num, buf, pos);
+	this->send_node(ip_num, buf, pos);
 }
 
 /*
@@ -386,6 +554,9 @@ void Ilms::proc_bf_update(unsigned long ip_num)
 		{
 			child_filter[i]->insert(data);
 			find = true;
+
+			if(global_switch == CHILDREFRESH)
+				shadow_filter->insert(data);
 			break;
 		}
 	}
@@ -393,7 +564,7 @@ void Ilms::proc_bf_update(unsigned long ip_num)
 	{
 		sc.buf[0] = TOP_BF_UPDATE;
 		for(unsigned int i=0; i < top.size(); i++)
-			this->send(top[i].get_ip_num(), sc.buf, sc.len);
+			this->send_node(top[i].get_ip_num(), sc.buf, sc.len);
 	}
 }
 
@@ -499,10 +670,11 @@ void Ilms::proc_lookup_nack()
 	insert(data,DATA_SIZE+4, (char *)&count, sizeof(count));
 }
 
-void Ilms::req_id_register()
+void Ilms::req_id_register(unsigned long ip_num)
 {
 	char *data;
 	char *value;
+
 	if(!sc.next_value(data,DATA_SIZE))
 		return;
 
@@ -510,11 +682,23 @@ void Ilms::req_id_register()
 		return;
 
 	my_filter->insert(data);
-	insert(data,DATA_SIZE,value,0);
+
+	std::string loc = ":";
+	loc += value;
+
+	insert(data,DATA_SIZE, loc.c_str(), loc.size());
+
+	if(global_switch == MYREFRESH)
+		shadow_filter->insert(data);
 
 	sc.buf[0] = TOP_BF_UPDATE;
 	for(unsigned int i=0; i < top.size(); i++)
-		this->send(top[i].get_ip_num(), sc.buf, sc.len);
+		this->send_node(top[i].get_ip_num(), sc.buf, sc.len);
+
+	sc.buf[0] = PEER_BF_UPDATE;
+	for(unsigned int i=0; i < peering.size(); i++)
+		this->send_node(peering[i].get_ip_num(), sc.buf, sc.len);
+	this->send_node(ip_num, sc.buf, sc.len);
 }
 
 
@@ -523,7 +707,7 @@ void Ilms::req_id_register()
  * 사실상 기존 프로토콜과 동일함
  */
 
-void Ilms::req_loc_update()
+void Ilms::req_loc_update(unsigned long ip_num)
 {
 	char mode;
 	char *data;
@@ -544,7 +728,8 @@ void Ilms::req_loc_update()
 		std::string ret;
 		if(search(data,DATA_SIZE,ret))
 		{
-			ret += ":";
+			if(ret.back() != ':')
+				ret += ":";
 			ret += value;
 			insert(data,DATA_SIZE,ret.c_str(),ret.size());
 		}
@@ -576,6 +761,7 @@ void Ilms::req_loc_update()
 	{
 		insert(data,DATA_SIZE,value,*(unsigned char *)(value-1));
 	}
+	this->send_node(ip_num, sc.buf, sc.len);
 }
 
 /*
@@ -654,6 +840,7 @@ void Ilms::req_id_deregister(unsigned long ip_num)
 	{
 		remove(data, DATA_SIZE);
 	}
+	this->send_node(ip_num, sc.buf, sc.len);
 }
 
 void Ilms::peer_bf_update(unsigned long ip_num)
@@ -700,7 +887,7 @@ void Ilms::peer_lookup(unsigned long ip_num)
 	sc.buf[sc.len++] = CMD_LOOKUP;
 	sc.buf[0] = CMD_LOOKUP_NACK;
 	*up_down = MARK_UP;
-	this->send(ip_num, sc.buf, sc.len);
+	this->send_node(ip_num, sc.buf, sc.len);
 }
 
 void Ilms::top_bf_update(unsigned long ip_num)

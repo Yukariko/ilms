@@ -1,12 +1,12 @@
 .\"{{{}}}
 .\"{{{ Title
-.TH ILMSCLI 1 "Ilms Client Manual"
+.TH ilmscli 1 "ILMS Client Manual"
 
 .\"}}}
 
 .\"{{{ Name
 .SH NAME
-ilmscli - ilms client
+ilmscli - ILMS client
 
 .\"}}}
 
@@ -18,28 +18,35 @@ ilmscli - ilms client
 .BR IP
 .BR IP_ADDRESS
 .br
+
 .BR REG
 .BR ID
 .BR [LOC]
 .br
+
 .BR SET
 .BR ID
 .BR LOC
 .br
+
 .BR GET
 .BR ID
 .br
+
 .BR REP
 .BR ID
 .BR LOC
 .br
+
 .BR SUB
 .BR ID
 .BR LOC
 .br
+
 .BR DELETE
 .BR ID
 .br
+
 .BR EXIT
 
 .\"}}}
@@ -49,27 +56,36 @@ ilmscli - ilms client
 .B ilmscli
 ilms client program
 .br
+
 .B IP
 Set ip address. ip_address use x.x.x.x format.
 .br
+
 .B REG
-ID Registration. Input string encode to 24B binary automatically. LOC value isn't necessary.
+ID Registration. Input string encode to 24B binary automatically. LOC value is not necessary.
 .br
+
 .B SET
-Insert LOC value to ID.
+Set LOC value to ID.
 .br
+
 .B GET
-Get ID.
+Get LOC value of ID.
 .br
+
 .B REP
 Change ID's LOC value to given LOC string. LOC value must include :(colon) delimeter.
 .br
+
 .B SUB
-Remove ID's LOC value that matching with given LOC string.
+Remove ID's LOC value matching with given LOC string.
 .br
+
 .B DELETE
 Delete ID.
 .br
+
 .B EXIT
 Finish ilmscli process. 
+
 .\"}}}

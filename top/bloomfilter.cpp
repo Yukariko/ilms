@@ -9,18 +9,18 @@
  * hash : 해시 함수 배열
  */
 
-Bloomfilter::Bloomfilter(long long size, int numHash,long long (**hash)(char *))
+Bloomfilter::Bloomfilter(long long size, int numHash,long long (**hash)(const char *))
 {
 	this->size = size;
 	this->numHash = numHash;
 
-	this->hash = new(long long (*[numHash])(char *));
+	this->hash = new(long long (*[numHash])(const char *));
 
 	for(int i=0;i<numHash;i++)
 		this->hash[i] = hash[i];
 
-	field = new unsigned char[size/8+1];
-	memset(field,0,size/8+1);
+	filter = new unsigned char[size/8+1];
+	memset(filter,0,size/8+1);
 }
 
 /*
@@ -30,7 +30,7 @@ Bloomfilter::Bloomfilter(long long size, int numHash,long long (**hash)(char *))
 
 Bloomfilter::~Bloomfilter()
 {
-	delete[] field;
+	delete[] filter;
 	delete[] hash;
 }
 
@@ -38,12 +38,12 @@ Bloomfilter::~Bloomfilter()
  * 데이터 등록
  */
 
-void Bloomfilter::insert(char *data)
+void Bloomfilter::insert(const char *data)
 {
 	for(int i=0;i<numHash;i++)
 	{
 		const long long res = hash[i](data) % size;
-		field[res>>3] |= (1 << (res&7));
+		filter[res>>3] |= (1 << (res&7));
 	}
 }
 
@@ -51,12 +51,12 @@ void Bloomfilter::insert(char *data)
  * 데이터 검색
  */
 
-bool Bloomfilter::lookup(char *data)
+bool Bloomfilter::lookup(const char *data)
 {
 	for(int i=0;i<numHash;i++)
 	{
 		const long long res = hash[i](data) % size;
-		if(!(field[res>>3] & (1 << (res&7))))
+		if(!(filter[res>>3] & (1 << (res&7))))
 			return false;
 	}
 	return true;
@@ -67,15 +67,31 @@ bool Bloomfilter::lookBitArray(long long *bitArray)
 	for(int i=0;i<numHash;i++)
 	{
 		const long long res = bitArray[i];
-		if(!(field[res>>3] & (1 << (res&7))))
+		if(!(filter[res>>3] & (1 << (res&7))))
 			return false;
 	}
 	return true;
 }
-void Bloomfilter::getBitArray(long long *bitArray, char *data)
+void Bloomfilter::getBitArray(long long *bitArray, const char *data)
 {
 	for(int i=0;i<numHash;i++)
 	{
 		bitArray[i] = hash[i](data) % size;
 	}
+}
+
+void Bloomfilter::zeroFilter()
+{
+	memset((void *)filter, 0, size / 8 + 1);
+}
+
+void Bloomfilter::mergeFilter(unsigned char *hostFilter)
+{
+	for(int i=0, e = size / 8 + 1; i < e; i++)
+		filter[i] |= hostFilter[i];
+}
+
+void Bloomfilter::setFilter(unsigned char *hostFilter)
+{
+	memcpy((void *)filter, (const void *)hostFilter, size / 8 + 1);
 }
