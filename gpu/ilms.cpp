@@ -765,7 +765,8 @@ void Ilms::req_loc_update(unsigned long ip_num)
 		std::string ret;
 		if(search(data,DATA_SIZE,ret))
 		{
-			ret += ":";
+			if(ret.back() != ':')
+				ret += ":";
 			ret += value;
 			insert(data,DATA_SIZE,ret.c_str(),ret.size());
 		}
