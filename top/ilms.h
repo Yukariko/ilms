@@ -67,7 +67,7 @@ public:
 	void stat_run();
 	void refresh_run();
 	void cmd_run();
-	
+
 	//test
 	void test_process();
 
@@ -82,6 +82,8 @@ private:
 	static Bloomfilter **top_filter;
 	static Bloomfilter **peer_filter;
 	static Bloomfilter *shadow_filter;
+
+	static Scanner sc;
 
 	static std::atomic<int> global_counter;
 	static std::atomic<int> global_switch;
