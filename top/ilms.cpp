@@ -339,7 +339,7 @@ void Ilms::refresh_run()
 			global_switch = NOREFRESH;
 
 			for(size_t i=0; i < top.size(); i++)
-				send_refresh(top[i]->get_ip_num(), shadow_filter->filter);
+				send_refresh(top[i].get_ip_num(), shadow_filter->filter);
 		}
 	}
 	else
@@ -365,7 +365,7 @@ void Ilms::refresh_run()
 			//test_filter();
 
 			for(size_t i=0; i < top.size(); i++)
-				send_refresh(top[i]->get_ip_num(), shadow_filter->filter);
+				send_refresh(top[i].get_ip_num(), shadow_filter->filter);
 		}
 	}
 }
