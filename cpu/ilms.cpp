@@ -373,7 +373,22 @@ void Ilms::cmd_run()
 	while(1)
 	{
 		std::cin >> c;
-		if(c == "show-table")
+		if(c == "show")
+		{
+			std::cout << "--------------------" << std::endl;
+			leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
+			for(it->SeekToFirst(); it->Valid(); it->Next())
+			{
+				std::string key = it->key().ToString();
+				if(key.length() != DATA_SIZE)
+					continue;
+				std::cout << "[" << key.c_str() << "] " << it->value().ToString() << std::endl;
+			}
+			assert(it->status().ok());	// Check for any errors found during the scan
+			delete it;
+			std::cout << "--------------------" << std::endl;
+		}
+		else if(c == "crash")
 		{
 			leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
 			for(it->SeekToFirst(); it->Valid(); it->Next())
@@ -381,10 +396,13 @@ void Ilms::cmd_run()
 				std::string key = it->key().ToString();
 				if(key.length() != DATA_SIZE)
 					continue;
-				std::cout << key.c_str() << " - " << it->value().ToString() << std::endl;
+				leveldb::Status s = db->Delete(leveldb::WriteOptions(),leveldb::Slice(key.c_str(),DATA_SIZE));
+				assert(s.ok());
 			}
 			assert(it->status().ok());	// Check for any errors found during the scan
 			delete it;
+
+			std::cout << "delete complete" << std::endl;
 		}
 	}
 }
