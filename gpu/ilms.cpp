@@ -389,7 +389,7 @@ void Ilms::cmd_run()
 	while(1)
 	{
 		std::cin >> c;
-		if(c == "show mdb")
+		if(c == "show-table")
 		{
 			leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
 			for(it->SeekToFirst(); it->Valid(); it->Next())
