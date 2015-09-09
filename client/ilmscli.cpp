@@ -2,12 +2,16 @@
 
 #include "ilmscli.h"
 
-#define REQ_ID_REGISTER					0x20
-#define REQ_LOC_UPDATE						0x21
+#define REQ_ID_REGISTER				0x20
+#define REQ_LOC_UPDATE				0x21
 #define REQ_LOOKUP						0x22
-#define REQ_ID_DEREGISTER						0x23
+#define REQ_ID_DEREGISTER			0x23
+#define REQ_SUCCESS						0x24
 
-
+#define LOC_LOOKUP						0x00
+#define LOC_SET								0x01
+#define LOC_SUB								0x02
+#define LOC_REP								0X03
 /*
  * Ilms 클라이언트 생성자
  * 요청을 전달할 노드의 ip를 설정하고 자신의 소켓 초기화
@@ -80,7 +84,6 @@ bool IlmsCli::req_loc_update(char mode, const string& id, const string& loc)
 	int len=0;
 
 	header[len++] = REQ_LOC_UPDATE;
-	header[len++] = mode;
 	for(size_t i=0; i < ID_SIZE; i++)
 	{
 		if(i < id.size())
@@ -88,14 +91,15 @@ bool IlmsCli::req_loc_update(char mode, const string& id, const string& loc)
 		else
 			header[len++] = 0;
 	}
-	
+	header[len++] = mode;
 	header[len] = loc.length() + 1;
 	strcpy(header+len+1, loc.c_str());
 
 	len += header[len] + 1;
 
 	this->send(header,len);
-	return this->recieve(header) == len;
+	this->recieve(header);
+	return header[0] == REQ_SUCCESS;
 }
 
 /*
@@ -115,7 +119,11 @@ int IlmsCli::req_lookup(const string& id, string& buf)
 			header[len++] = id[i];
 		else
 			header[len++] = 0;
-	}	
+	}
+
+	header[len++] = LOC_LOOKUP;
+	header[len++] = 0;
+
 
 	this->send(header,len);
 	len = this->recieve(header);

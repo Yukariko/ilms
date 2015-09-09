@@ -43,7 +43,7 @@ int main()
 			break;
 		case SET:
 			if(cin >> data >> value)
-				ret = ilms.req_loc_update(0, data, value);
+				ret = ilms.req_loc_update(LOC_SET, data, value);
 			break;
 		case GET:
 			if(cin >> data)
@@ -59,11 +59,11 @@ int main()
 			break;
 		case REP:
 			if(cin >> data >> value)
-				ret = ilms.req_loc_update(2, data, value);
+				ret = ilms.req_loc_update(LOC_REP, data, value);
 			break;
 		case SUB:
 			if(cin >> data >> value)
-				ret = ilms.req_loc_update(1, data, value);
+				ret = ilms.req_loc_update(LOC_SUB, data, value);
 			break;
 		case DELETE:
 			if(cin >> data)

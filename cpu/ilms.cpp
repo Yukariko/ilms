@@ -12,14 +12,16 @@
 #define REQ_LOC_UPDATE				0x21
 #define REQ_LOOKUP						0x22
 #define REQ_ID_DEREGISTER			0x23
+#define REQ_SUCCESS						0x24
 
 #define PEER_BF_UPDATE				0x30
 #define PEER_LOOKUP						0x31
 #define PEER_LOOKUP_DOWN			0x32
 
-#define DATA_ADD									0x00
-#define DATA_DELETE								0x01
-#define DATA_REPLACE							0X02
+#define LOC_LOOKUP						0x00
+#define LOC_SET								0x01
+#define LOC_SUB								0x02
+#define LOC_REP								0X03
 
 #define MARK_UP										0x01
 #define MARK_DOWN									0x00
@@ -582,25 +584,13 @@ void Ilms::proc_bf_update(unsigned long ip_num)
 
 void Ilms::proc_lookup(unsigned long ip_num)
 {
-	char *data;
-	unsigned long ip_org_num;
-
-	if(!sc.next_value(data,DATA_SIZE))
+	char *id;
+	if(!sc.next_value(id,DATA_SIZE))
 		return;
 
+	unsigned long ip_org_num;
 	if(!sc.next_value(ip_org_num))
 		return;
-
-	my_filter->getBitArray(bitArray,data);
-	if(my_filter->lookBitArray(bitArray))
-	{
-		std::string ret;
-		if(search(data,DATA_SIZE,ret))
-		{
-			send_id(ip_org_num,data,ret.c_str(),ret.length());
-			return;
-		}
-	}
 
 	char *up_down;
 	if(!sc.next_value(up_down,1))
@@ -609,6 +599,62 @@ void Ilms::proc_lookup(unsigned long ip_num)
 	char *p_depth;
 	if(!sc.next_value(p_depth,4))
 		return;
+
+	char mode;
+	if(!sc.next_value(mode))
+		return;
+
+	char *value;
+	if(!sc.next_value(value))
+		return;
+
+
+	my_filter->getBitArray(bitArray,id);
+	if(my_filter->lookBitArray(bitArray))
+	{
+		std::string ret;
+		if(search(id,DATA_SIZE,ret))
+		{
+			if(mode == LOC_LOOKUP)
+			{
+				send_id(ip_org_num,id,ret.c_str(),ret.length());
+				return;
+			}
+			else if(mode == LOC_SET)
+			{
+				if(ret.back() != ':')
+					ret += ":";
+				ret += value;
+				insert(id,DATA_SIZE,ret.c_str(),ret.size());
+			}
+			else if(mode == LOC_SUB)
+			{
+				char res[BUF_SIZE];
+				int len = 0;
+				for(unsigned int i=0;i < ret.size(); i++)
+				{
+					if(ret[i] == ':')
+					{
+						if(strncmp(ret.c_str()+i+1,value,*(unsigned char *)(value-1)-1) == 0)
+						{
+							i += *(unsigned char *)(value-1)-1;
+							continue;
+						}
+					}
+					res[len++] = ret[i];
+				}
+				res[len] = 0;
+				insert(id,DATA_SIZE,res,len);
+			}
+			else if(mode == LOC_REP)
+			{
+				insert(id,DATA_SIZE,value,*(unsigned char *)(value-1));
+			}
+			sc.buf[0] = REQ_SUCCESS;
+			this->send_node(ip_org_num, sc.buf, sc.len);
+			return;
+		}
+	}
 
 	unsigned long depth = ntohl(*(unsigned long *)p_depth);
 
@@ -619,19 +665,19 @@ void Ilms::proc_lookup(unsigned long ip_num)
 	if(*up_down == MARK_UP)
 	{
 		*up_down = MARK_DOWN;
-		count += send_child(ip_num,data);
+		count += send_child(ip_num,id);
 	}
 	else
 	{
-		count += send_child(data);
+		count += send_child(id);
 	}
 
 	sc.buf[0] = PEER_LOOKUP;
-	count += send_peer(data);
+	count += send_peer(id);
 
 	if(count)
 	{
-		insert(data,DATA_SIZE+4, (char *)&count, sizeof(count));
+		insert(id,DATA_SIZE+4, (char *)&count, sizeof(count));
 	}
 	else
 	{
@@ -640,10 +686,7 @@ void Ilms::proc_lookup(unsigned long ip_num)
 		*up_down = MARK_UP;
 
 		if(depth > 0)
-		{
-			sc.buf[sc.len++] = CMD_LOOKUP;
 			sc.buf[0] = CMD_LOOKUP_NACK;
-		}
 		else
 			sc.buf[0] = CMD_LOOKUP;
 		this->send_node(parent->get_ip_num(), sc.buf, sc.len);
@@ -658,53 +701,53 @@ void Ilms::proc_lookup(unsigned long ip_num)
 
 void Ilms::proc_lookup_nack()
 {
-	char *data = sc.get_cur();
+	char *id = sc.get_cur();
 	char *p_depth = sc.get_cur() + DATA_SIZE + 4 + 1;
 	unsigned long depth = ntohl(*(unsigned long *)p_depth);
 
 	std::string ret;
 
-	if(!search(data,DATA_SIZE+4,ret))
+	if(!search(id,DATA_SIZE+4,ret))
 		return;
 
 	int count = *(int *)ret.c_str();
 
 	if(--count == 0)
 	{
-		remove(data,DATA_SIZE+4);
+		remove(id,DATA_SIZE+4);
 
 		*(unsigned long *)p_depth = htonl(depth-1);
 
 		if(depth == 1)
-			sc.buf[0] = sc.buf[--sc.len];
+			sc.buf[0] = CMD_LOOKUP;
 		this->send_node(parent->get_ip_num(), sc.buf, sc.len);
 		return;
 	}
 
-	insert(data,DATA_SIZE+4, (char *)&count, sizeof(count));
+	insert(id,DATA_SIZE+4, (char *)&count, sizeof(count));
 }
 
 
 void Ilms::req_id_register(unsigned long ip_num)
 {
-	char *data;
+	char *id;
 	char *value;
 
-	if(!sc.next_value(data,DATA_SIZE))
+	if(!sc.next_value(id,DATA_SIZE))
 		return;
 
 	if(!sc.next_value(value))
 		return;
 
-	my_filter->insert(data);
+	my_filter->insert(id);
 
 	std::string loc = ":";
 	loc += value;
 
-	insert(data,DATA_SIZE, loc.c_str(), loc.size());
+	insert(id,DATA_SIZE, loc.c_str(), loc.size());
 
 	if(global_switch == MYREFRESH)
-		shadow_filter->insert(data);
+		shadow_filter->insert(id);
 
 	sc.buf[0] = CMD_BF_UPDATE;
 	this->send_node(parent->get_ip_num(), sc.buf, sc.len);
@@ -722,59 +765,7 @@ void Ilms::req_id_register(unsigned long ip_num)
 
 void Ilms::req_loc_update(unsigned long ip_num)
 {
-	char mode;
-	char *data;
-	char *value;
-
-	if(!sc.next_value(mode))
-		return;
-
-	if(!sc.next_value(data,DATA_SIZE))
-		return;
-
-	if(!sc.next_value(value))
-		return;
-
-
-	if(mode == DATA_ADD)
-	{
-		std::string ret;
-		if(search(data,DATA_SIZE,ret))
-		{
-			if(ret.back() != ':')
-				ret += ":";
-			ret += value;
-			insert(data,DATA_SIZE,ret.c_str(),ret.size());
-		}
-	}
-	else if(mode == DATA_DELETE)
-	{
-		std::string ret;
-		if(search(data,DATA_SIZE,ret))
-		{
-			char res[BUF_SIZE];
-			int len = 0;
-			for(unsigned int i=0;i < ret.size(); i++)
-			{
-				if(ret[i] == ':')
-				{
-					if(strncmp(ret.c_str()+i+1,value,*(unsigned char *)(value-1)-1) == 0)
-					{
-						i += *(unsigned char *)(value-1)-1;
-						continue;
-					}
-				}
-				res[len++] = ret[i];
-			}
-			res[len] = 0;
-			insert(data,DATA_SIZE,res,len);
-		}
-	}
-	else if(mode == DATA_REPLACE)
-	{
-		insert(data,DATA_SIZE,value,*(unsigned char *)(value-1));
-	}
-	this->send_node(ip_num, sc.buf, sc.len);
+	req_lookup(ip_num);
 }
 
 /*
@@ -784,12 +775,31 @@ void Ilms::req_loc_update(unsigned long ip_num)
 
 void Ilms::req_lookup(unsigned long ip_num)
 {
-	char *data;
-
-	if(!sc.next_value(data,DATA_SIZE))
+	char *id;
+	if(!sc.next_value(id,DATA_SIZE))
 		return;
 
-	char *pos = sc.get_cur();
+	char mode;
+	if(!sc.next_value(mode))
+		return;
+
+	unsigned char vlen;
+	if(!sc.next_value(vlen))
+		return;
+
+	char *value = sc.get_cur();
+
+	char new_packet[BUF_SIZE];
+	char *pos = new_packet;
+
+	*pos = CMD_LOOKUP;
+	pos++;
+
+	for(int i=0; i < DATA_SIZE; i++)
+	{
+		*pos = id[i];
+		pos++;
+	}
 
 	*(unsigned long *)pos = ip_num;
 	pos += 4;
@@ -798,20 +808,67 @@ void Ilms::req_lookup(unsigned long ip_num)
 	pos++;
 
 	char *p_depth = pos;
+	*(unsigned long *)p_depth = 0;
 	pos += 4;
 
-	*(unsigned long *)p_depth = 0;
+	*pos = mode;
+	pos++;
 
-	sc.len = pos - sc.buf;
+	*pos = vlen;
+	pos++;
 
+	for(unsigned char i=0; i < vlen; i++)
+	{
+		*pos = value[i];
+		pos++;
+	}
 
-	my_filter->getBitArray(bitArray,data);
+	int len = (int)(pos - new_packet);
+	sc = Scanner(new_packet, len);
+
+	my_filter->getBitArray(bitArray,id);
 	if(my_filter->lookBitArray(bitArray))
 	{
 		std::string ret;
-		if(search(data,DATA_SIZE,ret))
+		if(search(id,DATA_SIZE,ret))
 		{
-			send_id(ip_num,data,ret.c_str(),ret.length());
+			if(mode == LOC_LOOKUP)
+			{
+				send_id(ip_num,id,ret.c_str(),ret.length());
+				return;
+			}
+			else if(mode == LOC_SET)
+			{
+				if(ret.back() != ':')
+					ret += ":";
+				ret += value;
+				insert(id,DATA_SIZE,ret.c_str(),ret.size());
+			}
+			else if(mode == LOC_SUB)
+			{
+				char res[BUF_SIZE];
+				int rlen = 0;
+				for(unsigned int i=0;i < ret.size(); i++)
+				{
+					if(ret[i] == ':')
+					{
+						if(strncmp(ret.c_str()+i+1,value,vlen) == 0)
+						{
+							i += vlen-1;
+							continue;
+						}
+					}
+					res[rlen++] = ret[i];
+				}
+				res[rlen] = 0;
+				insert(id,DATA_SIZE,res,rlen);
+			}
+			else if(mode == LOC_REP)
+			{
+				insert(id,DATA_SIZE,value,vlen);
+			}
+			sc.buf[0] = REQ_SUCCESS;
+			this->send_node(ip_num, new_packet, len);
 			return;
 		}
 	}
@@ -822,14 +879,14 @@ void Ilms::req_lookup(unsigned long ip_num)
 	int count = 0;
 
 	sc.buf[0] = PEER_LOOKUP;
-	count += send_peer(data);
+	count += send_peer(id);
 
 	sc.buf[0] = CMD_LOOKUP;
-	count += send_child(data);
+	count += send_child(id);
 
 	if(count)
 	{
-		insert(data,DATA_SIZE+4, (char *)&count, sizeof(count));
+		insert(id,DATA_SIZE+4, (char *)&count, sizeof(count));
 	}
 	else
 	{
@@ -846,29 +903,29 @@ void Ilms::req_lookup(unsigned long ip_num)
 
 void Ilms::req_id_deregister(unsigned long ip_num)
 {
-	char *data;
+	char *id;
 
-	if(!sc.next_value(data,DATA_SIZE))
+	if(!sc.next_value(id,DATA_SIZE))
 		return;
 
-	if(my_filter->lookup(data))
+	if(my_filter->lookup(id))
 	{
-		remove(data, DATA_SIZE);
+		remove(id, DATA_SIZE);
 	}
 	this->send_node(ip_num, sc.buf, sc.len);
 }
 
 void Ilms::peer_bf_update(unsigned long ip_num)
 {
-	char *data;
-	if(!sc.next_value(data,DATA_SIZE))
+	char *id;
+	if(!sc.next_value(id,DATA_SIZE))
 		return;
 
 	for(unsigned int i=0; i < peered.size(); i++)
 	{
 		if(ip_num == peered[i].get_ip_num())
 		{
-			peer_filter[i]->insert(data);
+			peer_filter[i]->insert(id);
 			break;
 		}
 	}
@@ -876,30 +933,77 @@ void Ilms::peer_bf_update(unsigned long ip_num)
 
 void Ilms::peer_lookup(unsigned long ip_num)
 {
-	char *data;
-	unsigned long ip_org_num;
-
-	if(!sc.next_value(data,DATA_SIZE))
+	char *id;
+	if(!sc.next_value(id,DATA_SIZE))
 		return;
 
+	unsigned long ip_org_num;
 	if(!sc.next_value(ip_org_num))
 		return;
-
-	if(my_filter->lookup(data))
-	{
-		std::string ret;
-		if(search(data,DATA_SIZE,ret))
-		{
-			send_id(ip_org_num,data,ret.c_str(),ret.length());
-			return;
-		}
-	}
 
 	char *up_down;
 	if(!sc.next_value(up_down,1))
 		return;
 
-	sc.buf[sc.len++] = CMD_LOOKUP;
+	char *p_depth;
+	if(!sc.next_value(p_depth,4))
+		return;
+
+	char mode;
+	if(!sc.next_value(mode))
+		return;
+
+	char *value;
+	if(!sc.next_value(value))
+		return;
+
+	my_filter->getBitArray(bitArray,id);
+	if(my_filter->lookBitArray(bitArray))
+	{
+		std::string ret;
+		if(search(id,DATA_SIZE,ret))
+		{
+			if(mode == LOC_LOOKUP)
+			{
+				send_id(ip_org_num,id,ret.c_str(),ret.length());
+				return;
+			}
+			else if(mode == LOC_SET)
+			{
+				if(ret.back() != ':')
+					ret += ":";
+				ret += value;
+				insert(id,DATA_SIZE,ret.c_str(),ret.size());
+			}
+			else if(mode == LOC_SUB)
+			{
+				char res[BUF_SIZE];
+				int len = 0;
+				for(unsigned int i=0;i < ret.size(); i++)
+				{
+					if(ret[i] == ':')
+					{
+						if(strncmp(ret.c_str()+i+1,value,*(unsigned char *)(value-1)-1) == 0)
+						{
+							i += *(unsigned char *)(value-1)-1;
+							continue;
+						}
+					}
+					res[len++] = ret[i];
+				}
+				res[len] = 0;
+				insert(id,DATA_SIZE,res,len);
+			}
+			else if(mode == LOC_REP)
+			{
+				insert(id,DATA_SIZE,value,*(unsigned char *)(value-1));
+			}
+			sc.buf[0] = REQ_SUCCESS;
+			this->send_node(ip_org_num, sc.buf, sc.len);
+			return;
+		}
+	}
+
 	sc.buf[0] = CMD_LOOKUP_NACK;
 	*up_down = MARK_UP;
 	this->send_node(ip_num, sc.buf, sc.len);
@@ -907,47 +1011,135 @@ void Ilms::peer_lookup(unsigned long ip_num)
 
 void Ilms::proc_lookup_down()
 {
-	char *data;
-	unsigned long ip_org_num;
-
-	if(!sc.next_value(data,DATA_SIZE))
+	char *id;
+	if(!sc.next_value(id,DATA_SIZE))
 		return;
 
+	unsigned long ip_org_num;
 	if(!sc.next_value(ip_org_num))
 		return;
 
-	my_filter->getBitArray(bitArray,data);
+	char mode;
+	if(!sc.next_value(mode))
+		return;
+
+	char *value;
+	if(!sc.next_value(value))
+		return;
+
+	my_filter->getBitArray(bitArray,id);
 	if(my_filter->lookBitArray(bitArray))
 	{
 		std::string ret;
-		if(search(data,DATA_SIZE,ret))
+		if(search(id,DATA_SIZE,ret))
 		{
-			send_id(ip_org_num,data,ret.c_str(),ret.length());
+			if(mode == LOC_LOOKUP)
+			{
+				send_id(ip_org_num,id,ret.c_str(),ret.length());
+				return;
+			}
+			else if(mode == LOC_SET)
+			{
+				if(ret.back() != ':')
+					ret += ":";
+				ret += value;
+				insert(id,DATA_SIZE,ret.c_str(),ret.size());
+			}
+			else if(mode == LOC_SUB)
+			{
+				char res[BUF_SIZE];
+				int len = 0;
+				for(unsigned int i=0;i < ret.size(); i++)
+				{
+					if(ret[i] == ':')
+					{
+						if(strncmp(ret.c_str()+i+1,value,*(unsigned char *)(value-1)-1) == 0)
+						{
+							i += *(unsigned char *)(value-1)-1;
+							continue;
+						}
+					}
+					res[len++] = ret[i];
+				}
+				res[len] = 0;
+				insert(id,DATA_SIZE,res,len);
+			}
+			else if(mode == LOC_REP)
+			{
+				insert(id,DATA_SIZE,value,*(unsigned char *)(value-1));
+			}
+			sc.buf[0] = REQ_SUCCESS;
+			this->send_node(ip_org_num, sc.buf, sc.len);
 			return;
 		}
 	}
-	send_child(data);
+
+	send_child(id);
 	sc.buf[0] = PEER_LOOKUP_DOWN;
-	send_peer(data);
+	send_peer(id);
 }
 
 void Ilms::peer_lookup_down()
 {
-	char *data;
-	unsigned long ip_org_num;
-
-	if(!sc.next_value(data,DATA_SIZE))
+	char *id;
+	if(!sc.next_value(id,DATA_SIZE))
 		return;
 
+	unsigned long ip_org_num;
 	if(!sc.next_value(ip_org_num))
 		return;
 
-	if(my_filter->lookup(data))
+	char mode;
+	if(!sc.next_value(mode))
+		return;
+
+	char *value;
+	if(!sc.next_value(value))
+		return;
+
+	my_filter->getBitArray(bitArray,id);
+	if(my_filter->lookBitArray(bitArray))
 	{
 		std::string ret;
-		if(search(data,DATA_SIZE,ret))
+		if(search(id,DATA_SIZE,ret))
 		{
-			send_id(ip_org_num,data,ret.c_str(),ret.length());
+			if(mode == LOC_LOOKUP)
+			{
+				send_id(ip_org_num,id,ret.c_str(),ret.length());
+				return;
+			}
+			else if(mode == LOC_SET)
+			{
+				if(ret.back() != ':')
+					ret += ":";
+				ret += value;
+				insert(id,DATA_SIZE,ret.c_str(),ret.size());
+			}
+			else if(mode == LOC_SUB)
+			{
+				char res[BUF_SIZE];
+				int len = 0;
+				for(unsigned int i=0;i < ret.size(); i++)
+				{
+					if(ret[i] == ':')
+					{
+						if(strncmp(ret.c_str()+i+1,value,*(unsigned char *)(value-1)-1) == 0)
+						{
+							i += *(unsigned char *)(value-1)-1;
+							continue;
+						}
+					}
+					res[len++] = ret[i];
+				}
+				res[len] = 0;
+				insert(id,DATA_SIZE,res,len);
+			}
+			else if(mode == LOC_REP)
+			{
+				insert(id,DATA_SIZE,value,*(unsigned char *)(value-1));
+			}
+			sc.buf[0] = REQ_SUCCESS;
+			this->send_node(ip_org_num, sc.buf, sc.len);
 			return;
 		}
 	}
