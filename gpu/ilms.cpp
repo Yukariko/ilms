@@ -13,14 +13,16 @@
 #define REQ_LOC_UPDATE				0x21
 #define REQ_LOOKUP						0x22
 #define REQ_ID_DEREGISTER			0x23
+#define REQ_SUCCESS						0x24
 
 #define PEER_BF_UPDATE				0x30
 #define PEER_LOOKUP						0x31
 #define PEER_LOOKUP_DOWN			0x32
 
-#define DATA_ADD									0x00
-#define DATA_DELETE								0x01
-#define DATA_REPLACE							0X02
+#define LOC_LOOKUP						0x00
+#define LOC_SET								0x01
+#define LOC_SUB								0x02
+#define LOC_REP								0X03
 
 #define MARK_UP										0x01
 #define MARK_DOWN									0x00
