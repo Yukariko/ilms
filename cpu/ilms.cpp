@@ -788,7 +788,6 @@ void Ilms::req_lookup(unsigned long ip_num)
 		return;
 
 	char *value = sc.get_cur();
-
 	char new_packet[BUF_SIZE];
 	char *pos = new_packet;
 
@@ -824,7 +823,10 @@ void Ilms::req_lookup(unsigned long ip_num)
 	}
 
 	int len = (int)(pos - new_packet);
-	sc = Scanner(new_packet, len);
+	for(int i=0; i < len; i++)
+		sc.buf[i] = new_packet[i];
+
+	sc = Scanner(sc.buf, len);
 
 	my_filter->getBitArray(bitArray,id);
 	if(my_filter->lookBitArray(bitArray))
@@ -868,7 +870,7 @@ void Ilms::req_lookup(unsigned long ip_num)
 				insert(id,DATA_SIZE,value,vlen);
 			}
 			sc.buf[0] = REQ_SUCCESS;
-			this->send_node(ip_num, new_packet, len);
+			this->send_node(ip_num, sc.buf, sc.len);
 			return;
 		}
 	}
