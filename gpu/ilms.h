@@ -39,6 +39,7 @@ public:
 	int send_child(unsigned long ip_num, char *data);
 	int send_peer(char *data);
 	void send_id(unsigned long ip_num, char *id, const char *buf, int len);
+	void loc_process(unsigned long ip_num, char *id, char mode, unsigned char vlen, char *value, std::string& ret);
 
 	//data
 	void insert(char *key,int klen,const char *val,int vlen);
