@@ -1007,9 +1007,13 @@ void Ilms::peer_lookup_down()
 	char mode;
 	if(!sc.next_value(mode))
 		return;
+	
+	unsigned char vlen;
+	if(!sc.next_value(vlen))
+		return;
 
 	char *value;
-	if(!sc.next_value(value))
+	if(!sc.next_value(value,vlen))
 		return;
 
 	my_filter->getBitArray(bitArray,id);
