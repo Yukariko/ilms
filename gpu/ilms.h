@@ -23,6 +23,8 @@
 #define NTHREAD 64U
 #define DB_PATH "./db"
 #define REFRESH_FREQUENCY 60
+#define VIRTUAL_FILTER_ID_NUM 1000
+#define STAT_FREQUENCY 60
 
 class Ilms : public Tree
 {

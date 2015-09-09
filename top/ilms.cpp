@@ -148,7 +148,7 @@ void Ilms::test_process()
 	{
 		if(child[i].get_ip_num() == 0)
 		{
-			for(int j=0;j<1000;j++)
+			for(int j=0;j<VIRTUAL_FILTER_ID_NUM;j++)
 			{
 				for(int k=0;k<24;k+=2)
 				{
@@ -254,7 +254,7 @@ void Ilms::stat_run()
 	{
 		for(int i=0; nProt[i] != -1; i++)
 			std::cout << sProt[i] << " : " << protocol[nProt[i]] << std::endl;
-		sleep(60);
+		sleep(STAT_FREQUENCY);
 	}
 }
 
