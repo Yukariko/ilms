@@ -604,8 +604,12 @@ void Ilms::proc_lookup(unsigned long ip_num)
 	if(!sc.next_value(mode))
 		return;
 
+	unsigned char vlen;
+	if(!sc.next_value(vlen))
+		return;
+
 	char *value;
-	if(!sc.next_value(value))
+	if(!sc.next_value(value, vlen))
 		return;
 
 
@@ -635,9 +639,9 @@ void Ilms::proc_lookup(unsigned long ip_num)
 				{
 					if(ret[i] == ':')
 					{
-						if(strncmp(ret.c_str()+i+1,value,*(unsigned char *)(value-1)-1) == 0)
+						if(strncmp(ret.c_str()+i+1,value,vlen-1) == 0)
 						{
-							i += *(unsigned char *)(value-1)-1;
+							i += vlen-1;
 							continue;
 						}
 					}
@@ -648,9 +652,14 @@ void Ilms::proc_lookup(unsigned long ip_num)
 			}
 			else if(mode == LOC_REP)
 			{
-				insert(id,DATA_SIZE,value,*(unsigned char *)(value-1));
+				insert(id,DATA_SIZE,value,vlen);
 			}
 			sc.buf[0] = REQ_SUCCESS;
+			sc.buf[DATA_SIZE+1] = mode;
+			sc.buf[DATA_SIZE+2] = vlen;
+			for(size_t i=0; i < vlen; i++)
+				sc.buf[DATA_SIZE+3+i] = value[i];
+			sc.len = DATA_SIZE + 4 + vlen;
 			this->send_node(ip_org_num, sc.buf, sc.len);
 			return;
 		}
@@ -854,7 +863,7 @@ void Ilms::req_lookup(unsigned long ip_num)
 				{
 					if(ret[i] == ':')
 					{
-						if(strncmp(ret.c_str()+i+1,value,vlen) == 0)
+						if(strncmp(ret.c_str()+i+1,value,vlen-1) == 0)
 						{
 							i += vlen-1;
 							continue;
@@ -870,6 +879,11 @@ void Ilms::req_lookup(unsigned long ip_num)
 				insert(id,DATA_SIZE,value,vlen);
 			}
 			sc.buf[0] = REQ_SUCCESS;
+			sc.buf[DATA_SIZE+1] = mode;
+			sc.buf[DATA_SIZE+2] = vlen;
+			for(size_t i=0; i < vlen; i++)
+				sc.buf[DATA_SIZE+3+i] = value[i];
+			sc.len = DATA_SIZE + 4 + vlen;
 			this->send_node(ip_num, sc.buf, sc.len);
 			return;
 		}
@@ -955,8 +969,12 @@ void Ilms::peer_lookup(unsigned long ip_num)
 	if(!sc.next_value(mode))
 		return;
 
+	unsigned char vlen;
+	if(!sc.next_value(vlen))
+		return;
+
 	char *value;
-	if(!sc.next_value(value))
+	if(!sc.next_value(value,vlen))
 		return;
 
 	my_filter->getBitArray(bitArray,id);
@@ -985,9 +1003,9 @@ void Ilms::peer_lookup(unsigned long ip_num)
 				{
 					if(ret[i] == ':')
 					{
-						if(strncmp(ret.c_str()+i+1,value,*(unsigned char *)(value-1)-1) == 0)
+						if(strncmp(ret.c_str()+i+1,value,vlen-1) == 0)
 						{
-							i += *(unsigned char *)(value-1)-1;
+							i += vlen-1;
 							continue;
 						}
 					}
@@ -998,9 +1016,14 @@ void Ilms::peer_lookup(unsigned long ip_num)
 			}
 			else if(mode == LOC_REP)
 			{
-				insert(id,DATA_SIZE,value,*(unsigned char *)(value-1));
+				insert(id,DATA_SIZE,value,vlen);
 			}
 			sc.buf[0] = REQ_SUCCESS;
+			sc.buf[DATA_SIZE+1] = mode;
+			sc.buf[DATA_SIZE+2] = vlen;
+			for(size_t i=0; i < vlen; i++)
+				sc.buf[DATA_SIZE+3+i] = value[i];
+			sc.len = DATA_SIZE + 4 + vlen;
 			this->send_node(ip_org_num, sc.buf, sc.len);
 			return;
 		}
@@ -1025,8 +1048,12 @@ void Ilms::proc_lookup_down()
 	if(!sc.next_value(mode))
 		return;
 
+	unsigned char vlen;
+	if(!sc.next_value(vlen))
+		return;
+
 	char *value;
-	if(!sc.next_value(value))
+	if(!sc.next_value(value,vlen))
 		return;
 
 	my_filter->getBitArray(bitArray,id);
@@ -1055,9 +1082,9 @@ void Ilms::proc_lookup_down()
 				{
 					if(ret[i] == ':')
 					{
-						if(strncmp(ret.c_str()+i+1,value,*(unsigned char *)(value-1)-1) == 0)
+						if(strncmp(ret.c_str()+i+1,value,vlen-1) == 0)
 						{
-							i += *(unsigned char *)(value-1)-1;
+							i += vlen-1;
 							continue;
 						}
 					}
@@ -1068,9 +1095,14 @@ void Ilms::proc_lookup_down()
 			}
 			else if(mode == LOC_REP)
 			{
-				insert(id,DATA_SIZE,value,*(unsigned char *)(value-1));
+				insert(id,DATA_SIZE,value,vlen);
 			}
 			sc.buf[0] = REQ_SUCCESS;
+			sc.buf[DATA_SIZE+1] = mode;
+			sc.buf[DATA_SIZE+2] = vlen;
+			for(size_t i=0; i < vlen; i++)
+				sc.buf[DATA_SIZE+3+i] = value[i];
+			sc.len = DATA_SIZE + 4 + vlen;
 			this->send_node(ip_org_num, sc.buf, sc.len);
 			return;
 		}
@@ -1125,9 +1157,9 @@ void Ilms::peer_lookup_down()
 				{
 					if(ret[i] == ':')
 					{
-						if(strncmp(ret.c_str()+i+1,value,*(unsigned char *)(value-1)-1) == 0)
+						if(strncmp(ret.c_str()+i+1,value,vlen-1) == 0)
 						{
-							i += *(unsigned char *)(value-1)-1;
+							i += vlen-1;
 							continue;
 						}
 					}
@@ -1138,9 +1170,14 @@ void Ilms::peer_lookup_down()
 			}
 			else if(mode == LOC_REP)
 			{
-				insert(id,DATA_SIZE,value,*(unsigned char *)(value-1));
+				insert(id,DATA_SIZE,value,vlen);
 			}
 			sc.buf[0] = REQ_SUCCESS;
+			sc.buf[DATA_SIZE+1] = mode;
+			sc.buf[DATA_SIZE+2] = vlen;
+			for(size_t i=0; i < vlen; i++)
+				sc.buf[DATA_SIZE+3+i] = value[i];
+			sc.len = DATA_SIZE + 4 + vlen;
 			this->send_node(ip_org_num, sc.buf, sc.len);
 			return;
 		}
