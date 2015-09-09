@@ -123,11 +123,11 @@ int IlmsCli::req_lookup(const string& id, string& buf)
 
 	this->send(header,len);
 	len = this->recieve(header);
-	if(len < 0)
+	if(len < 0 || header[0] != REQ_SUCCESS)
 		return -1;
 
 	header[len] = 0;
-	buf = header + ID_SIZE + 1;
+	buf = header + ID_SIZE + 3;
 	return buf.length();
 }
 

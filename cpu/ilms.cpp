@@ -534,16 +534,61 @@ void Ilms::send_id(unsigned long ip_num, char *id, const char *ret, int len)
 {
 	char buf[BUF_SIZE];
 	int pos = 0;
+	buf[pos++] = REQ_SUCCESS;
 	for(int i=0;i<DATA_SIZE;i++)
 		buf[pos++] = id[i];
-	int count = 0;
+
+	buf[pos++] = LOC_LOOKUP;
+	buf[pos++] = len;
 	for(int i=0; i < len; i++)
-		if(ret[i] == ':')
-			count++;
-	buf[pos++] = count;
-	strncpy(buf+pos,ret,len);
-	pos += len;
+		buf[pos++] = ret[i];
 	this->send_node(ip_num, buf, pos);
+}
+
+void Ilms::loc_process(unsigned long ip_num, char *id, char mode, unsigned char vlen, char *value, std::string& ret)
+{
+	if(mode == LOC_LOOKUP)
+	{
+		send_id(ip_num,id,ret.c_str(),ret.length());
+		return;
+	}
+	else if(mode == LOC_SET)
+	{
+		if(ret.back() != ':')
+			ret += ":";
+		ret += value;
+		insert(id,DATA_SIZE,ret.c_str(),ret.size());
+	}
+	else if(mode == LOC_SUB)
+	{
+		char res[BUF_SIZE];
+		int len = 0;
+		for(unsigned int i=0;i < ret.size(); i++)
+		{
+			if(ret[i] == ':')
+			{
+				if(strncmp(ret.c_str()+i+1,value,vlen-1) == 0)
+				{
+					i += vlen-1;
+					continue;
+				}
+			}
+			res[len++] = ret[i];
+		}
+		res[len] = 0;
+		insert(id,DATA_SIZE,res,len);
+	}
+	else if(mode == LOC_REP)
+	{
+		insert(id,DATA_SIZE,value,vlen);
+	}
+	sc.buf[0] = REQ_SUCCESS;
+	sc.buf[DATA_SIZE+1] = mode;
+	sc.buf[DATA_SIZE+2] = vlen;
+	for(size_t i=0; i < vlen; i++)
+		sc.buf[DATA_SIZE+3+i] = value[i];
+	sc.len = DATA_SIZE + 4 + vlen;
+	this->send_node(ip_num, sc.buf, sc.len);
 }
 
 /*
@@ -619,48 +664,7 @@ void Ilms::proc_lookup(unsigned long ip_num)
 		std::string ret;
 		if(search(id,DATA_SIZE,ret))
 		{
-			if(mode == LOC_LOOKUP)
-			{
-				send_id(ip_org_num,id,ret.c_str(),ret.length());
-				return;
-			}
-			else if(mode == LOC_SET)
-			{
-				if(ret.back() != ':')
-					ret += ":";
-				ret += value;
-				insert(id,DATA_SIZE,ret.c_str(),ret.size());
-			}
-			else if(mode == LOC_SUB)
-			{
-				char res[BUF_SIZE];
-				int len = 0;
-				for(unsigned int i=0;i < ret.size(); i++)
-				{
-					if(ret[i] == ':')
-					{
-						if(strncmp(ret.c_str()+i+1,value,vlen-1) == 0)
-						{
-							i += vlen-1;
-							continue;
-						}
-					}
-					res[len++] = ret[i];
-				}
-				res[len] = 0;
-				insert(id,DATA_SIZE,res,len);
-			}
-			else if(mode == LOC_REP)
-			{
-				insert(id,DATA_SIZE,value,vlen);
-			}
-			sc.buf[0] = REQ_SUCCESS;
-			sc.buf[DATA_SIZE+1] = mode;
-			sc.buf[DATA_SIZE+2] = vlen;
-			for(size_t i=0; i < vlen; i++)
-				sc.buf[DATA_SIZE+3+i] = value[i];
-			sc.len = DATA_SIZE + 4 + vlen;
-			this->send_node(ip_org_num, sc.buf, sc.len);
+			loc_process(ip_org_num, id, mode, vlen, value, ret);
 			return;
 		}
 	}
@@ -843,48 +847,7 @@ void Ilms::req_lookup(unsigned long ip_num)
 		std::string ret;
 		if(search(id,DATA_SIZE,ret))
 		{
-			if(mode == LOC_LOOKUP)
-			{
-				send_id(ip_num,id,ret.c_str(),ret.length());
-				return;
-			}
-			else if(mode == LOC_SET)
-			{
-				if(ret.back() != ':')
-					ret += ":";
-				ret += value;
-				insert(id,DATA_SIZE,ret.c_str(),ret.size());
-			}
-			else if(mode == LOC_SUB)
-			{
-				char res[BUF_SIZE];
-				int rlen = 0;
-				for(unsigned int i=0;i < ret.size(); i++)
-				{
-					if(ret[i] == ':')
-					{
-						if(strncmp(ret.c_str()+i+1,value,vlen-1) == 0)
-						{
-							i += vlen-1;
-							continue;
-						}
-					}
-					res[rlen++] = ret[i];
-				}
-				res[rlen] = 0;
-				insert(id,DATA_SIZE,res,rlen);
-			}
-			else if(mode == LOC_REP)
-			{
-				insert(id,DATA_SIZE,value,vlen);
-			}
-			sc.buf[0] = REQ_SUCCESS;
-			sc.buf[DATA_SIZE+1] = mode;
-			sc.buf[DATA_SIZE+2] = vlen;
-			for(size_t i=0; i < vlen; i++)
-				sc.buf[DATA_SIZE+3+i] = value[i];
-			sc.len = DATA_SIZE + 4 + vlen;
-			this->send_node(ip_num, sc.buf, sc.len);
+			loc_process(ip_num, id, mode, vlen, value, ret);
 			return;
 		}
 	}
@@ -983,48 +946,7 @@ void Ilms::peer_lookup(unsigned long ip_num)
 		std::string ret;
 		if(search(id,DATA_SIZE,ret))
 		{
-			if(mode == LOC_LOOKUP)
-			{
-				send_id(ip_org_num,id,ret.c_str(),ret.length());
-				return;
-			}
-			else if(mode == LOC_SET)
-			{
-				if(ret.back() != ':')
-					ret += ":";
-				ret += value;
-				insert(id,DATA_SIZE,ret.c_str(),ret.size());
-			}
-			else if(mode == LOC_SUB)
-			{
-				char res[BUF_SIZE];
-				int len = 0;
-				for(unsigned int i=0;i < ret.size(); i++)
-				{
-					if(ret[i] == ':')
-					{
-						if(strncmp(ret.c_str()+i+1,value,vlen-1) == 0)
-						{
-							i += vlen-1;
-							continue;
-						}
-					}
-					res[len++] = ret[i];
-				}
-				res[len] = 0;
-				insert(id,DATA_SIZE,res,len);
-			}
-			else if(mode == LOC_REP)
-			{
-				insert(id,DATA_SIZE,value,vlen);
-			}
-			sc.buf[0] = REQ_SUCCESS;
-			sc.buf[DATA_SIZE+1] = mode;
-			sc.buf[DATA_SIZE+2] = vlen;
-			for(size_t i=0; i < vlen; i++)
-				sc.buf[DATA_SIZE+3+i] = value[i];
-			sc.len = DATA_SIZE + 4 + vlen;
-			this->send_node(ip_org_num, sc.buf, sc.len);
+			loc_process(ip_org_num, id, mode, vlen, value, ret);
 			return;
 		}
 	}
@@ -1062,48 +984,7 @@ void Ilms::proc_lookup_down()
 		std::string ret;
 		if(search(id,DATA_SIZE,ret))
 		{
-			if(mode == LOC_LOOKUP)
-			{
-				send_id(ip_org_num,id,ret.c_str(),ret.length());
-				return;
-			}
-			else if(mode == LOC_SET)
-			{
-				if(ret.back() != ':')
-					ret += ":";
-				ret += value;
-				insert(id,DATA_SIZE,ret.c_str(),ret.size());
-			}
-			else if(mode == LOC_SUB)
-			{
-				char res[BUF_SIZE];
-				int len = 0;
-				for(unsigned int i=0;i < ret.size(); i++)
-				{
-					if(ret[i] == ':')
-					{
-						if(strncmp(ret.c_str()+i+1,value,vlen-1) == 0)
-						{
-							i += vlen-1;
-							continue;
-						}
-					}
-					res[len++] = ret[i];
-				}
-				res[len] = 0;
-				insert(id,DATA_SIZE,res,len);
-			}
-			else if(mode == LOC_REP)
-			{
-				insert(id,DATA_SIZE,value,vlen);
-			}
-			sc.buf[0] = REQ_SUCCESS;
-			sc.buf[DATA_SIZE+1] = mode;
-			sc.buf[DATA_SIZE+2] = vlen;
-			for(size_t i=0; i < vlen; i++)
-				sc.buf[DATA_SIZE+3+i] = value[i];
-			sc.len = DATA_SIZE + 4 + vlen;
-			this->send_node(ip_org_num, sc.buf, sc.len);
+			loc_process(ip_org_num, id, mode, vlen, value, ret);
 			return;
 		}
 	}
@@ -1137,48 +1018,7 @@ void Ilms::peer_lookup_down()
 		std::string ret;
 		if(search(id,DATA_SIZE,ret))
 		{
-			if(mode == LOC_LOOKUP)
-			{
-				send_id(ip_org_num,id,ret.c_str(),ret.length());
-				return;
-			}
-			else if(mode == LOC_SET)
-			{
-				if(ret.back() != ':')
-					ret += ":";
-				ret += value;
-				insert(id,DATA_SIZE,ret.c_str(),ret.size());
-			}
-			else if(mode == LOC_SUB)
-			{
-				char res[BUF_SIZE];
-				int len = 0;
-				for(unsigned int i=0;i < ret.size(); i++)
-				{
-					if(ret[i] == ':')
-					{
-						if(strncmp(ret.c_str()+i+1,value,vlen-1) == 0)
-						{
-							i += vlen-1;
-							continue;
-						}
-					}
-					res[len++] = ret[i];
-				}
-				res[len] = 0;
-				insert(id,DATA_SIZE,res,len);
-			}
-			else if(mode == LOC_REP)
-			{
-				insert(id,DATA_SIZE,value,vlen);
-			}
-			sc.buf[0] = REQ_SUCCESS;
-			sc.buf[DATA_SIZE+1] = mode;
-			sc.buf[DATA_SIZE+2] = vlen;
-			for(size_t i=0; i < vlen; i++)
-				sc.buf[DATA_SIZE+3+i] = value[i];
-			sc.len = DATA_SIZE + 4 + vlen;
-			this->send_node(ip_org_num, sc.buf, sc.len);
+			loc_process(ip_org_num, id, mode, vlen, value, ret);
 			return;
 		}
 	}
