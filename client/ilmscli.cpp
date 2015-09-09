@@ -27,7 +27,7 @@ IlmsCli::IlmsCli(string ip)
 	serv_adr.sin_port = htons(MYPORT);
 
 	struct timeval tv;
-	tv.tv_sec = 5;
+	tv.tv_sec = TIME_LIMIT;
 	tv.tv_usec = 0;
 
 	setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
