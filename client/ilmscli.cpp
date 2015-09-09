@@ -8,10 +8,6 @@
 #define REQ_ID_DEREGISTER			0x23
 #define REQ_SUCCESS						0x24
 
-#define LOC_LOOKUP						0x00
-#define LOC_SET								0x01
-#define LOC_SUB								0x02
-#define LOC_REP								0X03
 /*
  * Ilms 클라이언트 생성자
  * 요청을 전달할 노드의 ip를 설정하고 자신의 소켓 초기화

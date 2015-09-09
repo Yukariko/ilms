@@ -10,6 +10,11 @@
 #define MYPORT 7979
 #define BUF_SIZE 256
 #define ID_SIZE 24
+#define LOC_LOOKUP						0x00
+#define LOC_SET								0x01
+#define LOC_SUB								0x02
+#define LOC_REP								0X03
+
 
 using namespace std;
 
