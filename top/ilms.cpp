@@ -12,14 +12,16 @@
 #define REQ_LOC_UPDATE				0x21
 #define REQ_LOOKUP						0x22
 #define REQ_ID_DEREGISTER			0x23
+#define REQ_SUCCESS						0x24
 
 #define PEER_BF_UPDATE				0x30
 #define PEER_LOOKUP						0x31
 #define PEER_LOOKUP_DOWN			0x32
 
-#define DATA_ADD									0x00
-#define DATA_DELETE								0x01
-#define DATA_REPLACE							0X02
+#define LOC_LOOKUP						0x00
+#define LOC_SET								0x01
+#define LOC_SUB								0x02
+#define LOC_REP								0X03
 
 #define TOP_BF_UPDATE								0x40
 #define TOP_LOOKUP						0x41
@@ -515,6 +517,11 @@ int Ilms::send_peer(char *data)
 
 void Ilms::send_top(char *data)
 {
+	for(size_t i=1+DATA_SIZE+4+5; i < sc.len; i++)
+	{
+		sc.buf[i-5] = sc.buf[i];
+	}
+	sc.len -= 5;
 	for(unsigned int i=0; i < top.size();)
 		if(top_filter[i]->lookBitArray(bitArray))
 			Ilms::send_node(top[i].get_ip_num(), sc.buf, sc.len);
@@ -524,16 +531,61 @@ void Ilms::send_id(unsigned long ip_num, char *id, const char *ret, int len)
 {
 	char buf[BUF_SIZE];
 	int pos = 0;
+	buf[pos++] = REQ_SUCCESS;
 	for(int i=0;i<DATA_SIZE;i++)
 		buf[pos++] = id[i];
-	int count = 0;
+
+	buf[pos++] = LOC_LOOKUP;
+	buf[pos++] = len;
 	for(int i=0; i < len; i++)
-		if(ret[i] == ':')
-			count++;
-	buf[pos++] = count;
-	strncpy(buf+pos,ret,len);
-	pos += len;
+		buf[pos++] = ret[i];
 	this->send_node(ip_num, buf, pos);
+}
+
+void Ilms::loc_process(unsigned long ip_num, char *id, char mode, unsigned char vlen, char *value, std::string& ret)
+{
+	if(mode == LOC_LOOKUP)
+	{
+		send_id(ip_num,id,ret.c_str(),ret.length());
+		return;
+	}
+	else if(mode == LOC_SET)
+	{
+		if(ret.back() != ':')
+			ret += ":";
+		ret += value;
+		insert(id,DATA_SIZE,ret.c_str(),ret.size());
+	}
+	else if(mode == LOC_SUB)
+	{
+		char res[BUF_SIZE];
+		int len = 0;
+		for(unsigned int i=0;i < ret.size(); i++)
+		{
+			if(ret[i] == ':')
+			{
+				if(strncmp(ret.c_str()+i+1,value,vlen-1) == 0)
+				{
+					i += vlen-1;
+					continue;
+				}
+			}
+			res[len++] = ret[i];
+		}
+		res[len] = 0;
+		insert(id,DATA_SIZE,res,len);
+	}
+	else if(mode == LOC_REP)
+	{
+		insert(id,DATA_SIZE,value,vlen);
+	}
+	sc.buf[0] = REQ_SUCCESS;
+	sc.buf[DATA_SIZE+1] = mode;
+	sc.buf[DATA_SIZE+2] = vlen;
+	for(size_t i=0; i < vlen; i++)
+		sc.buf[DATA_SIZE+3+i] = value[i];
+	sc.len = DATA_SIZE + 4 + vlen;
+	this->send_node(ip_num, sc.buf, sc.len);
 }
 
 /*
@@ -578,26 +630,13 @@ void Ilms::proc_bf_update(unsigned long ip_num)
 
 void Ilms::proc_lookup(unsigned long ip_num)
 {
-	char *data;
-	unsigned long ip_org_num;
-
-	if(!sc.next_value(data,DATA_SIZE))
+	char *id;
+	if(!sc.next_value(id,DATA_SIZE))
 		return;
 
+	unsigned long ip_org_num;
 	if(!sc.next_value(ip_org_num))
 		return;
-
-
-	my_filter->getBitArray(bitArray,data);
-	if(my_filter->lookBitArray(bitArray))
-	{
-		std::string ret;
-		if(search(data,DATA_SIZE,ret))
-		{
-			send_id(ip_org_num,data,ret.c_str(),ret.length());
-			return;
-		}
-	}
 
 	char *up_down;
 	if(!sc.next_value(up_down,1))
@@ -607,6 +646,29 @@ void Ilms::proc_lookup(unsigned long ip_num)
 	if(!sc.next_value(p_depth,4))
 		return;
 
+	char mode;
+	if(!sc.next_value(mode))
+		return;
+
+	unsigned char vlen;
+	if(!sc.next_value(vlen))
+		return;
+
+	char *value;
+	if(!sc.next_value(value, vlen))
+		return;
+
+
+	my_filter->getBitArray(bitArray,id);
+	if(my_filter->lookBitArray(bitArray))
+	{
+		std::string ret;
+		if(search(id,DATA_SIZE,ret))
+		{
+			loc_process(ip_org_num, id, mode, vlen, value, ret);
+			return;
+		}
+	}
 	unsigned long depth = ntohl(*(unsigned long *)p_depth);
 
 	int count = 0;
@@ -616,24 +678,24 @@ void Ilms::proc_lookup(unsigned long ip_num)
 	if(*up_down == MARK_UP)
 	{
 		*up_down = MARK_DOWN;
-		count += send_child(ip_num,data);
+		count += send_child(ip_num,id);
 	}
 	else
 	{
-		count += send_child(data);
+		count += send_child(id);
 	}
 
 	sc.buf[0] = PEER_LOOKUP;
-	count += send_peer(data);
+	count += send_peer(id);
 
 	if(count)
 	{
-		insert(data,DATA_SIZE+4, (char *)&count, sizeof(count));
+		insert(id,DATA_SIZE+4, (char *)&count, sizeof(count));
 	}
 	else
 	{
 		sc.buf[0] = TOP_LOOKUP;
-		send_top(data);
+		send_top(id);
 	}
 }
 
@@ -709,59 +771,7 @@ void Ilms::req_id_register(unsigned long ip_num)
 
 void Ilms::req_loc_update(unsigned long ip_num)
 {
-	char mode;
-	char *data;
-	char *value;
-
-	if(!sc.next_value(mode))
-		return;
-
-	if(!sc.next_value(data,DATA_SIZE))
-		return;
-
-	if(!sc.next_value(value))
-		return;
-
-
-	if(mode == DATA_ADD)
-	{
-		std::string ret;
-		if(search(data,DATA_SIZE,ret))
-		{
-			if(ret.back() != ':')
-				ret += ":";
-			ret += value;
-			insert(data,DATA_SIZE,ret.c_str(),ret.size());
-		}
-	}
-	else if(mode == DATA_DELETE)
-	{
-		std::string ret;
-		if(search(data,DATA_SIZE,ret))
-		{
-			char res[BUF_SIZE];
-			int len = 0;
-			for(unsigned int i=0;i < ret.size(); i++)
-			{
-				if(ret[i] == ':')
-				{
-					if(strncmp(ret.c_str()+i+1,value,*(unsigned char *)(value-1)-1) == 0)
-					{
-						i += *(unsigned char *)(value-1)-1;
-						continue;
-					}
-				}
-				res[len++] = ret[i];
-			}
-			res[len] = 0;
-			insert(data,DATA_SIZE,res,len);
-		}
-	}
-	else if(mode == DATA_REPLACE)
-	{
-		insert(data,DATA_SIZE,value,*(unsigned char *)(value-1));
-	}
-	this->send_node(ip_num, sc.buf, sc.len);
+	req_lookup(ip_num);
 }
 
 /*
@@ -771,12 +781,30 @@ void Ilms::req_loc_update(unsigned long ip_num)
 
 void Ilms::req_lookup(unsigned long ip_num)
 {
-	char *data;
-
-	if(!sc.next_value(data,DATA_SIZE))
+	char *id;
+	if(!sc.next_value(id,DATA_SIZE))
 		return;
 
-	char *pos = sc.get_cur();
+	char mode;
+	if(!sc.next_value(mode))
+		return;
+
+	unsigned char vlen;
+	if(!sc.next_value(vlen))
+		return;
+
+	char *value = sc.get_cur();
+	char new_packet[BUF_SIZE];
+	char *pos = new_packet;
+
+	*pos = CMD_LOOKUP;
+	pos++;
+
+	for(int i=0; i < DATA_SIZE; i++)
+	{
+		*pos = id[i];
+		pos++;
+	}
 
 	*(unsigned long *)pos = ip_num;
 	pos += 4;
@@ -785,22 +813,38 @@ void Ilms::req_lookup(unsigned long ip_num)
 	pos++;
 
 	char *p_depth = pos;
+	*(unsigned long *)p_depth = 0;
 	pos += 4;
 
-	*(unsigned long *)p_depth = 0;
+	*pos = mode;
+	pos++;
 
-	sc.len = pos - sc.buf;
+	*pos = vlen;
+	pos++;
 
-	my_filter->getBitArray(bitArray,data);
+	for(unsigned char i=0; i < vlen; i++)
+	{
+		*pos = value[i];
+		pos++;
+	}
+
+	int len = (int)(pos - new_packet);
+	for(int i=0; i < len; i++)
+		sc.buf[i] = new_packet[i];
+
+	sc = Scanner(sc.buf, len);
+
+	my_filter->getBitArray(bitArray,id);
 	if(my_filter->lookBitArray(bitArray))
 	{
 		std::string ret;
-		if(search(data,DATA_SIZE,ret))
+		if(search(id,DATA_SIZE,ret))
 		{
-			send_id(ip_num,data,ret.c_str(),ret.length());
+			loc_process(ip_num, id, mode, vlen, value, ret);
 			return;
 		}
 	}
+
 
 	up_down = MARK_DOWN;
 	*(unsigned long *)p_depth = htonl(1);
@@ -808,19 +852,19 @@ void Ilms::req_lookup(unsigned long ip_num)
 	int count = 0;
 
 	sc.buf[0] = PEER_LOOKUP;
-	count += send_peer(data);
+	count += send_peer(id);
 
 	sc.buf[0] = CMD_LOOKUP;
-	count += send_child(data);
+	count += send_child(id);
 
 	if(count)
 	{
-		insert(data,DATA_SIZE+4, (char *)&count, sizeof(count));
+		insert(id,DATA_SIZE+4, (char *)&count, sizeof(count));
 	}
 	else
 	{
 		sc.buf[0] = TOP_LOOKUP;
-		send_top(data);
+		send_top(id);
 	}
 }
 
@@ -861,30 +905,45 @@ void Ilms::peer_bf_update(unsigned long ip_num)
 
 void Ilms::peer_lookup(unsigned long ip_num)
 {
-	char *data;
-	unsigned long ip_org_num;
-
-	if(!sc.next_value(data,DATA_SIZE))
+	char *id;
+	if(!sc.next_value(id,DATA_SIZE))
 		return;
 
+	unsigned long ip_org_num;
 	if(!sc.next_value(ip_org_num))
 		return;
-
-	if(my_filter->lookup(data))
-	{
-		std::string ret;
-		if(search(data,DATA_SIZE,ret))
-		{
-			send_id(ip_org_num,data,ret.c_str(),ret.length());
-			return;
-		}
-	}
 
 	char *up_down;
 	if(!sc.next_value(up_down,1))
 		return;
 
-	sc.buf[sc.len++] = CMD_LOOKUP;
+	char *p_depth;
+	if(!sc.next_value(p_depth,4))
+		return;
+
+	char mode;
+	if(!sc.next_value(mode))
+		return;
+
+	unsigned char vlen;
+	if(!sc.next_value(vlen))
+		return;
+
+	char *value;
+	if(!sc.next_value(value,vlen))
+		return;
+
+	my_filter->getBitArray(bitArray,id);
+	if(my_filter->lookBitArray(bitArray))
+	{
+		std::string ret;
+		if(search(id,DATA_SIZE,ret))
+		{
+			loc_process(ip_org_num, id, mode, vlen, value, ret);
+			return;
+		}
+	}
+
 	sc.buf[0] = CMD_LOOKUP_NACK;
 	*up_down = MARK_UP;
 	this->send_node(ip_num, sc.buf, sc.len);
@@ -908,32 +967,42 @@ void Ilms::top_bf_update(unsigned long ip_num)
 
 void Ilms::top_lookup()
 {
-	char *data;
-	unsigned long ip_org_num;
-
-	if(!sc.next_value(data,DATA_SIZE))
+	char *id;
+	if(!sc.next_value(id,DATA_SIZE))
 		return;
 
+	unsigned long ip_org_num;
 	if(!sc.next_value(ip_org_num))
 		return;
 
-	if(my_filter->lookup(data))
+	char mode;
+	if(!sc.next_value(mode))
+		return;
+
+	unsigned char vlen;
+	if(!sc.next_value(vlen))
+		return;
+
+	char *value;
+	if(!sc.next_value(value,vlen))
+		return;
+
+	my_filter->getBitArray(bitArray,id);
+	if(my_filter->lookBitArray(bitArray))
 	{
 		std::string ret;
-		if(search(data,DATA_SIZE,ret))
+		if(search(id,DATA_SIZE,ret))
 		{
-			send_id(ip_org_num,data,ret.c_str(),ret.length());
+			loc_process(ip_org_num, id, mode, vlen, value, ret);
 			return;
 		}
 	}
 
-	sc.len = sc.get_cur() - sc.buf;
-
 	sc.buf[0] = CMD_LOOKUP_DOWN;
-	send_child(data);
+	send_child(id);
 
 	sc.buf[0] = PEER_LOOKUP_DOWN;
-	send_peer(data);
+	send_peer(id);
 }
 
 /*

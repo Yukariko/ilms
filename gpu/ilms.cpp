@@ -576,15 +576,14 @@ void Ilms::send_id(unsigned long ip_num, char *id, const char *ret, int len)
 {
 	char buf[BUF_SIZE];
 	int pos = 0;
+	buf[pos++] = REQ_SUCCESS;
 	for(int i=0;i<DATA_SIZE;i++)
 		buf[pos++] = id[i];
-	int count = 0;
+
+	buf[pos++] = LOC_LOOKUP;
+	buf[pos++] = len;
 	for(int i=0; i < len; i++)
-		if(ret[i] == ':')
-			count++;
-	buf[pos++] = count;
-	strncpy(buf+pos,ret,len);
-	pos += len;
+		buf[pos++] = ret[i];
 	this->send_node(ip_num, buf, pos);
 }
 
