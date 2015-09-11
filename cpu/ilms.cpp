@@ -567,8 +567,8 @@ void Ilms::loc_process(unsigned long ip_num, char *id, char mode, unsigned char 
 		char res[BUF_SIZE];
 		int len = 0;
 
-		string loc;
-		string val;
+		std::string loc;
+		std::string val;
 		for(unsigned char i=0; i < vlen-1; i++)
 			val += value[i];
 
