@@ -567,16 +567,26 @@ void Ilms::loc_process(unsigned long ip_num, char *id, char mode, unsigned char 
 		char res[BUF_SIZE];
 		int len = 0;
 
+		string loc;
+		string val;
+		for(unsigned char i=0; i < vlen-1; i++)
+			val += value[i];
+
 		for(unsigned int i=0;i < ret.size(); i++)
 		{
 			if(ret[i] == ':')
 			{
-				if(strncmp(ret.c_str()+i+1,value,vlen-1) == 0)
+				if(loc == val)
 				{
 					find = true;
-					i += vlen-1;
+					i += loc.size();
 					continue;
 				}
+				loc = "";
+			}
+			else
+			{
+				loc += ret[i];
 			}
 			res[len++] = ret[i];
 		}
