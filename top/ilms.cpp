@@ -13,6 +13,7 @@
 #define REQ_LOOKUP						0x22
 #define REQ_ID_DEREGISTER			0x23
 #define REQ_SUCCESS						0x24
+#define REQ_FAIL							0x25
 
 #define PEER_BF_UPDATE				0x30
 #define PEER_LOOKUP						0x31
@@ -111,14 +112,14 @@ Ilms::Ilms()
 	{
 		peer_filter = new Bloomfilter*[peered.size()];
 		for(unsigned int i=0; i < peered.size(); i++)
-			peer_filter[i] = new Bloomfilter(defaultSize, 11, hash);	
+			peer_filter[i] = new Bloomfilter(defaultSize, 11, hash);
 	}
-	
+
 	if(top.size())
 	{
 		top_filter = new Bloomfilter*[top.size()];
 		for(unsigned int i=0; i < top.size(); i++)
-			top_filter[i] = new Bloomfilter(defaultSize, 11, hash);			
+			top_filter[i] = new Bloomfilter(defaultSize, 11, hash);
 	}
 
 	// socket init
@@ -187,7 +188,7 @@ void Ilms::start()
 {
 	char buf[BUF_SIZE];
 
-	struct sockaddr_in clnt_adr; 
+	struct sockaddr_in clnt_adr;
 	socklen_t clnt_adr_sz;
 
 	stat = std::thread(&Ilms::stat_run,this);
@@ -544,6 +545,7 @@ void Ilms::send_id(unsigned long ip_num, char *id, const char *ret, int len)
 
 void Ilms::loc_process(unsigned long ip_num, char *id, char mode, unsigned char vlen, char *value, std::string& ret)
 {
+	bool find = false;
 	if(mode == LOC_LOOKUP)
 	{
 		send_id(ip_num,id,ret.c_str(),ret.length());
@@ -555,6 +557,7 @@ void Ilms::loc_process(unsigned long ip_num, char *id, char mode, unsigned char 
 			ret += ":";
 		ret += value;
 		insert(id,DATA_SIZE,ret.c_str(),ret.size());
+		find = true;
 	}
 	else if(mode == LOC_SUB)
 	{
@@ -566,6 +569,7 @@ void Ilms::loc_process(unsigned long ip_num, char *id, char mode, unsigned char 
 			{
 				if(strncmp(ret.c_str()+i+1,value,vlen-1) == 0)
 				{
+					find = true;
 					i += vlen-1;
 					continue;
 				}
@@ -578,8 +582,13 @@ void Ilms::loc_process(unsigned long ip_num, char *id, char mode, unsigned char 
 	else if(mode == LOC_REP)
 	{
 		insert(id,DATA_SIZE,value,vlen);
+		find = true;
 	}
-	sc.buf[0] = REQ_SUCCESS;
+
+	if(find == false)
+		sc.buf[0] = REQ_FAIL;
+	else
+		sc.buf[0] = REQ_SUCCESS;
 	sc.buf[DATA_SIZE+1] = mode;
 	sc.buf[DATA_SIZE+2] = vlen;
 	for(size_t i=0; i < vlen; i++)
@@ -625,7 +634,7 @@ void Ilms::proc_bf_update(unsigned long ip_num)
  * 데이터 검색. 다음의 순서로 동작
  * 1) 자신의 필터에 데이터가 있다면 자신의 DB에서 검색. 검색 결과가 있다면 처음 노드에 직접 전송
  * 2) 없다면 자식 필터를 확인하고, 있다면 자식들에 대해 검색 전송
- * 3) 자식필터에 데이터가 없다면 부모노드로 올라감. 부모노드에서 내려온 상태라면 부모에 검색 실패 전송 
+ * 3) 자식필터에 데이터가 없다면 부모노드로 올라감. 부모노드에서 내려온 상태라면 부모에 검색 실패 전송
  */
 
 void Ilms::proc_lookup(unsigned long ip_num)
@@ -721,7 +730,7 @@ void Ilms::proc_lookup_nack()
 	if(--count == 0)
 	{
 		remove(data,DATA_SIZE+4);
-		
+
 		*(unsigned long *)p_depth = htonl(depth-1);
 
 		sc.buf[0] = TOP_LOOKUP;

@@ -7,6 +7,7 @@
 #define REQ_LOOKUP						0x22
 #define REQ_ID_DEREGISTER			0x23
 #define REQ_SUCCESS						0x24
+#define REQ_FAIL							0x25
 
 /*
  * Ilms 클라이언트 생성자
@@ -59,7 +60,7 @@ bool IlmsCli::req_id_register(const string& id, const string& loc)
 		else
 			header[len++] = 0;
 	}
-	
+
 	header[len] = loc.length() + 1;
 	strcpy(header+len+1, loc.c_str());
 
@@ -100,14 +101,14 @@ bool IlmsCli::req_loc_update(char mode, const string& id, const string& loc)
 
 /*
  * 데이터 검색 요청
- * 검색 결과를 받을때까지 기다림 
+ * 검색 결과를 받을때까지 기다림
  */
 
 int IlmsCli::req_lookup(const string& id, string& buf)
 {
 	char header[BUF_SIZE];
 	int len=0;
-	
+
 	header[len++] = REQ_LOOKUP;
 	for(size_t i=0; i < ID_SIZE; i++)
 	{
@@ -166,7 +167,7 @@ void IlmsCli::send(const char *buf,int len)
 	clnt_adr.sin_family = AF_INET;
 	clnt_adr.sin_addr.s_addr = inet_addr(ip.c_str());
 	clnt_adr.sin_port = htons(PORT);
- 
+
 	sendto(sock, buf, len, 0, (struct sockaddr *)&clnt_adr, clnt_adr_sz);
 }
 

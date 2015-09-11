@@ -13,6 +13,7 @@
 #define REQ_LOOKUP						0x22
 #define REQ_ID_DEREGISTER			0x23
 #define REQ_SUCCESS						0x24
+#define REQ_FAIL							0x25
 
 #define PEER_BF_UPDATE				0x30
 #define PEER_LOOKUP						0x31
@@ -547,6 +548,7 @@ void Ilms::send_id(unsigned long ip_num, char *id, const char *ret, int len)
 
 void Ilms::loc_process(unsigned long ip_num, char *id, char mode, unsigned char vlen, char *value, std::string& ret)
 {
+	bool find = false;
 	if(mode == LOC_LOOKUP)
 	{
 		send_id(ip_num,id,ret.c_str(),ret.length());
@@ -558,17 +560,20 @@ void Ilms::loc_process(unsigned long ip_num, char *id, char mode, unsigned char 
 			ret += ":";
 		ret += value;
 		insert(id,DATA_SIZE,ret.c_str(),ret.size());
+		find = true;
 	}
 	else if(mode == LOC_SUB)
 	{
 		char res[BUF_SIZE];
 		int len = 0;
+
 		for(unsigned int i=0;i < ret.size(); i++)
 		{
 			if(ret[i] == ':')
 			{
 				if(strncmp(ret.c_str()+i+1,value,vlen-1) == 0)
 				{
+					find = true;
 					i += vlen-1;
 					continue;
 				}
@@ -581,8 +586,13 @@ void Ilms::loc_process(unsigned long ip_num, char *id, char mode, unsigned char 
 	else if(mode == LOC_REP)
 	{
 		insert(id,DATA_SIZE,value,vlen);
+		find = true;
 	}
-	sc.buf[0] = REQ_SUCCESS;
+
+	if(find == false)
+		sc.buf[0] = REQ_FAIL;
+	else
+		sc.buf[0] = REQ_SUCCESS;
 	sc.buf[DATA_SIZE+1] = mode;
 	sc.buf[DATA_SIZE+2] = vlen;
 	for(size_t i=0; i < vlen; i++)
@@ -1007,7 +1017,7 @@ void Ilms::peer_lookup_down()
 	char mode;
 	if(!sc.next_value(mode))
 		return;
-	
+
 	unsigned char vlen;
 	if(!sc.next_value(vlen))
 		return;
