@@ -67,7 +67,8 @@ bool IlmsCli::req_id_register(const string& id, const string& loc)
 	len += header[len] + 1;
 
 	this->send(header,len);
-	return this->recieve(header) == len;
+	this->recieve(header);
+	return header[0] == REQ_SUCCESS;
 }
 
 
