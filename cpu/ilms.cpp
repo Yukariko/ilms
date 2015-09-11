@@ -564,9 +564,8 @@ void Ilms::loc_process(unsigned long ip_num, char *id, char mode, unsigned char 
 	}
 	else if(mode == LOC_SUB)
 	{
-		char res[BUF_SIZE];
 		int len = 0;
-
+		std::string res;
 		std::string loc;
 		std::string val;
 		for(unsigned char i=0; i < vlen-1; i++)
@@ -580,18 +579,30 @@ void Ilms::loc_process(unsigned long ip_num, char *id, char mode, unsigned char 
 				{
 					find = true;
 					i += loc.size();
-					continue;
 				}
-				loc = "";
+				else
+				{
+					res += ":";
+					res += loc;
+					loc = "";
+				}
 			}
 			else
 			{
 				loc += ret[i];
 			}
-			res[len++] = ret[i];
 		}
-		res[len] = 0;
-		insert(id,DATA_SIZE,res,len);
+		if(loc.size())
+		{
+			if(loc == val)
+				find = true;
+			else
+			{
+				res += ":";
+				res += loc;
+			}
+		}
+		insert(id,DATA_SIZE,res.c_str(),res.length());
 	}
 	else if(mode == LOC_REP)
 	{
