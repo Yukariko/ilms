@@ -606,23 +606,45 @@ void Ilms::loc_process(unsigned long ip_num, char *id, char mode, unsigned char 
 	}
 	else if(mode == LOC_SUB)
 	{
-		char res[BUF_SIZE];
 		int len = 0;
+		std::string res;
+		std::string loc;
+		std::string val;
+		for(unsigned char i=0; i < vlen-1; i++)
+			val += value[i];
+
 		for(unsigned int i=0;i < ret.size(); i++)
 		{
 			if(ret[i] == ':')
 			{
-				if(strncmp(ret.c_str()+i+1,value,vlen-1) == 0)
+				if(loc == val)
 				{
 					find = true;
-					i += vlen-1;
-					continue;
+					i += loc.size();
+				}
+				else if(loc.size())
+				{
+					res += ":";
+					res += loc;
+					loc = "";
 				}
 			}
-			res[len++] = ret[i];
+			else
+			{
+				loc += ret[i];
+			}
 		}
-		res[len] = 0;
-		insert(id,DATA_SIZE,res,len);
+		if(loc.size())
+		{
+			if(loc == val)
+				find = true;
+			else
+			{
+				res += ":";
+				res += loc;
+			}
+		}
+		insert(id,DATA_SIZE,res.c_str(),res.length());
 	}
 	else if(mode == LOC_REP)
 	{
@@ -891,6 +913,8 @@ void Ilms::req_lookup(unsigned long ip_num)
 	int len = (int)(pos - new_packet);
 	for(int i=0; i < len; i++)
 		sc.buf[i] = new_packet[i];
+
+	value = sc.buf + 1 + DATA_SIZE + 4 + 1 + 4 + 1 + 1;
 
 	sc = Scanner(sc.buf, len);
 
