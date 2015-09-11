@@ -580,7 +580,7 @@ void Ilms::loc_process(unsigned long ip_num, char *id, char mode, unsigned char 
 					find = true;
 					i += loc.size();
 				}
-				else
+				else if(loc.size())
 				{
 					res += ":";
 					res += loc;
