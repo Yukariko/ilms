@@ -851,6 +851,8 @@ void Ilms::req_lookup(unsigned long ip_num)
 	for(int i=0; i < len; i++)
 		sc.buf[i] = new_packet[i];
 
+	value = sc.buf + 1 + DATA_SIZE + 4 + 1 + 4 + 1 + 1;
+
 	sc = Scanner(sc.buf, len);
 
 	my_filter->getBitArray(bitArray,id);
