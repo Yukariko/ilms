@@ -9,23 +9,22 @@
 #define CMD_LOOKUP_DOWN				0x12
 
 #define REQ_ID_REGISTER				0x20
-#define REQ_LOC_UPDATE				0x21
-#define REQ_LOOKUP						0x22
-#define REQ_ID_DEREGISTER			0x23
-#define REQ_SUCCESS						0x24
-#define REQ_FAIL							0x25
+#define REQ_LOOKUP						0x21
+#define REQ_ID_DEREGISTER			0x22
+#define REQ_SUCCESS						0x23
+#define REQ_FAIL							0x24
 
 #define PEER_BF_UPDATE				0x30
 #define PEER_LOOKUP						0x31
 #define PEER_LOOKUP_DOWN			0x32
 
+#define TOP_BF_UPDATE					0x40
+#define TOP_LOOKUP						0x41
+
 #define LOC_LOOKUP						0x00
 #define LOC_SET								0x01
 #define LOC_SUB								0x02
 #define LOC_REP								0X03
-
-#define TOP_BF_UPDATE								0x40
-#define TOP_LOOKUP						0x41
 
 #define MARK_UP										0x01
 #define MARK_DOWN									0x00
@@ -516,16 +515,22 @@ int Ilms::send_peer(char *data)
 	return ret;
 }
 
-void Ilms::send_top(char *data)
+int Ilms::send_top(char *data)
 {
+	int ret = 0;
 	for(size_t i=1+DATA_SIZE+4+5; i < sc.len; i++)
-	{
 		sc.buf[i-5] = sc.buf[i];
-	}
 	sc.len -= 5;
 	for(unsigned int i=0; i < top.size();)
+	{
 		if(top_filter[i]->lookBitArray(bitArray))
+		{
 			Ilms::send_node(top[i].get_ip_num(), sc.buf, sc.len);
+			ret++;
+		}
+	}
+
+	return ret;
 }
 
 void Ilms::send_id(unsigned long ip_num, char *id, const char *ret, int len)
@@ -689,7 +694,6 @@ void Ilms::proc_lookup(unsigned long ip_num)
 	if(!sc.next_value(value, vlen))
 		return;
 
-
 	my_filter->getBitArray(bitArray,id);
 	if(my_filter->lookBitArray(bitArray))
 	{
@@ -700,6 +704,7 @@ void Ilms::proc_lookup(unsigned long ip_num)
 			return;
 		}
 	}
+
 	unsigned long depth = ntohl(*(unsigned long *)p_depth);
 
 	int count = 0;
@@ -726,7 +731,14 @@ void Ilms::proc_lookup(unsigned long ip_num)
 	else
 	{
 		sc.buf[0] = TOP_LOOKUP;
-		send_top(id);
+		if(send_top(id) == 0)
+		{
+			sc.buf[0] = REQ_FAIL;
+			for(size_t i=1+DATA_SIZE+4; i < sc.len; i++)
+				sc.buf[i-4] = sc.buf[i];
+			sc.len -= 4;
+			this->send_node(ip_num, sc.buf, sc.len);
+		}
 	}
 }
 
@@ -738,29 +750,36 @@ void Ilms::proc_lookup(unsigned long ip_num)
 
 void Ilms::proc_lookup_nack()
 {
-	char *data = sc.get_cur();
+	char *id = sc.get_cur();
 	char *p_depth = sc.get_cur() + DATA_SIZE + 4 + 1;
 	unsigned long depth = ntohl(*(unsigned long *)p_depth);
 
 	std::string ret;
 
-	if(!search(data,DATA_SIZE+4,ret))
+	if(!search(id,DATA_SIZE+4,ret))
 		return;
 
 	int count = *(int *)ret.c_str();
 
 	if(--count == 0)
 	{
-		remove(data,DATA_SIZE+4);
+		remove(id,DATA_SIZE+4);
 
 		*(unsigned long *)p_depth = htonl(depth-1);
 
 		sc.buf[0] = TOP_LOOKUP;
-		send_top(data);
+		if(send_top(id) == 0)
+		{
+			sc.buf[0] = REQ_FAIL;
+			for(size_t i=1+DATA_SIZE+4; i < sc.len; i++)
+				sc.buf[i-4] = sc.buf[i];
+			sc.len -= 4;
+			this->send_node(ip_num, sc.buf, sc.len);
+		}
 		return;
 	}
 
-	insert(data,DATA_SIZE+4, (char *)&count, sizeof(count));
+	insert(id,DATA_SIZE+4, (char *)&count, sizeof(count));
 }
 
 void Ilms::req_id_register(unsigned long ip_num)
@@ -773,6 +792,18 @@ void Ilms::req_id_register(unsigned long ip_num)
 
 	if(!sc.next_value(value))
 		return;
+
+	my_filter->getBitArray(bitArray,id);
+	if(my_filter->lookBitArray(bitArray))
+	{
+		std::string ret;
+		if(search(id,DATA_SIZE,ret))
+		{
+			sc.buf[0] = REQ_FAIL;
+			this->send_node(ip_num, sc.buf, sc.len);
+			return;
+		}
+	}
 
 	my_filter->insert(data);
 
@@ -799,11 +830,6 @@ void Ilms::req_id_register(unsigned long ip_num)
  * 클라이언트로 부터의 데이터 추가 요청
  * 사실상 기존 프로토콜과 동일함
  */
-
-void Ilms::req_loc_update(unsigned long ip_num)
-{
-	req_lookup(ip_num);
-}
 
 /*
  * 클라이언트로 부터의 데이터 검색 요청
@@ -897,7 +923,14 @@ void Ilms::req_lookup(unsigned long ip_num)
 	else
 	{
 		sc.buf[0] = TOP_LOOKUP;
-		send_top(id);
+		if(send_top(id) == 0)
+		{
+			sc.buf[0] = REQ_FAIL;
+			for(size_t i=1+DATA_SIZE+4; i < sc.len; i++)
+				sc.buf[i-4] = sc.buf[i];
+			sc.len -= 4;
+			this->send_node(ip_num, sc.buf, sc.len);
+		}
 	}
 }
 
@@ -913,10 +946,15 @@ void Ilms::req_id_deregister(unsigned long ip_num)
 	if(!sc.next_value(data,DATA_SIZE))
 		return;
 
-	if(my_filter->lookup(data))
-	{
-		remove(data, DATA_SIZE);
-	}
+	bool find = false;
+	if(my_filter->lookup(id))
+		if(remove(id, DATA_SIZE))
+			find = true;
+
+	if(find)
+		sc.buf[0] = REQ_SUCCESS;
+	else
+		sc.buf[0] = REQ_FAIL;
 	this->send_node(ip_num, sc.buf, sc.len);
 }
 

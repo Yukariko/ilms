@@ -22,7 +22,7 @@ int main()
 		while(oper[op] && cmd != oper[op])
 			op++;
 
-		bool ret = false;
+		int ret = false;
 		int len = 0;
 
 		switch(op)
@@ -49,10 +49,12 @@ int main()
 			if(cin >> data)
 			{
 				len = ilms.req_lookup(data, value);
-				if(len == -1)
-					cout << "No ID" << endl;
+				if(len == -2)
+					cout << oper[op] << " FAIL" << endl;
+				else if(len == -1)
+					cout << oper[op] << " No ID" << endl;
 				else if(len < 2)
-					cout << "No LOC" << endl;
+					cout << oper[op] << "No LOC" << endl;
 				else
 					cout << value << endl;
 			}
@@ -76,7 +78,7 @@ int main()
 		}
 
 		if(op == REG || op == SET || op == REP || op == SUB || op == DELETE)
-			cout << oper[op] << " " << (ret? "SUCCESS": "FAIL") << endl;
+			cout << oper[op] << " " << (ret == 1? "SUCCESS": ret == 0? "FAIL" : "No ID") << endl;
 	}
 	return 0;
 }

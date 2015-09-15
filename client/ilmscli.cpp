@@ -3,11 +3,10 @@
 #include "ilmscli.h"
 
 #define REQ_ID_REGISTER				0x20
-#define REQ_LOC_UPDATE				0x21
-#define REQ_LOOKUP						0x22
-#define REQ_ID_DEREGISTER			0x23
-#define REQ_SUCCESS						0x24
-#define REQ_FAIL							0x25
+#define REQ_LOOKUP						0x21
+#define REQ_ID_DEREGISTER			0x22
+#define REQ_SUCCESS						0x23
+#define REQ_FAIL							0x24
 
 /*
  * Ilms 클라이언트 생성자
@@ -76,12 +75,12 @@ bool IlmsCli::req_id_register(const string& id, const string& loc)
  * 데이터 추가 요청
  */
 
-bool IlmsCli::req_loc_update(char mode, const string& id, const string& loc)
+int IlmsCli::req_loc_update(char mode, const string& id, const string& loc)
 {
 	char header[BUF_SIZE];
 	int len=0;
 
-	header[len++] = REQ_LOC_UPDATE;
+	header[len++] = REQ_LOOKUP;
 	for(size_t i=0; i < ID_SIZE; i++)
 	{
 		if(i < id.size())
@@ -96,7 +95,9 @@ bool IlmsCli::req_loc_update(char mode, const string& id, const string& loc)
 	len += header[len] + 1;
 
 	this->send(header,len);
-	this->recieve(header);
+	int ret = this->recieve(header);
+	if(ret < 0)
+		return -1;
 	return header[0] == REQ_SUCCESS;
 }
 
@@ -125,7 +126,10 @@ int IlmsCli::req_lookup(const string& id, string& buf)
 
 	this->send(header,len);
 	len = this->recieve(header);
-	if(len < 0 || header[0] != REQ_SUCCESS)
+	if(len < 0)
+		return -2;
+
+	if(header[0] == REQ_FAIL)
 		return -1;
 
 	header[len] = 0;
@@ -152,7 +156,8 @@ bool IlmsCli::req_id_deregister(const string& id)
 	}
 
 	this->send(header,len);
-	return this->recieve(header) == len;
+	this->recieve(header);
+	return header[0] == REQ_SUCCESS;
 }
 
 /*

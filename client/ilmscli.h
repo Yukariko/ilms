@@ -27,7 +27,7 @@ public:
 
 	void set_ip(const string& ip);
 	bool req_id_register(const string& id, const string& loc);
-	bool req_loc_update(char mode, const string& id, const string& loc);
+	int req_loc_update(char mode, const string& id, const string& loc);
 	bool req_id_deregister(const string& id);
 	int req_lookup(const string& id, string& buf);
 

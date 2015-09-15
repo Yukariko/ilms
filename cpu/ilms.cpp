@@ -9,11 +9,10 @@
 #define CMD_LOOKUP_DOWN				0x12
 
 #define REQ_ID_REGISTER				0x20
-#define REQ_LOC_UPDATE				0x21
-#define REQ_LOOKUP						0x22
-#define REQ_ID_DEREGISTER			0x23
-#define REQ_SUCCESS						0x24
-#define REQ_FAIL							0x25
+#define REQ_LOOKUP						0x21
+#define REQ_ID_DEREGISTER			0x22
+#define REQ_SUCCESS						0x23
+#define REQ_FAIL							0x24
 
 #define PEER_BF_UPDATE				0x30
 #define PEER_LOOKUP						0x31
@@ -226,7 +225,6 @@ void Ilms::start()
 			case CMD_LOOKUP_DOWN: proc_lookup_down(); break;
 
 			case REQ_ID_REGISTER: req_id_register(ip_num); break;
-			case REQ_LOC_UPDATE: req_loc_update(ip_num); break;
 			case REQ_LOOKUP: req_lookup(ip_num); break;
 			case REQ_ID_DEREGISTER: req_id_deregister(ip_num); break;
 
@@ -783,6 +781,18 @@ void Ilms::req_id_register(unsigned long ip_num)
 	if(!sc.next_value(value))
 		return;
 
+	my_filter->getBitArray(bitArray,id);
+	if(my_filter->lookBitArray(bitArray))
+	{
+		std::string ret;
+		if(search(id,DATA_SIZE,ret))
+		{
+			sc.buf[0] = REQ_FAIL;
+			this->send_node(ip_num, sc.buf, sc.len);
+			return;
+		}
+	}
+
 	my_filter->insert(id);
 
 	std::string loc = ":";
@@ -808,11 +818,6 @@ void Ilms::req_id_register(unsigned long ip_num)
  * 클라이언트로 부터의 데이터 추가 요청
  * 사실상 기존 프로토콜과 동일함
  */
-
-void Ilms::req_loc_update(unsigned long ip_num)
-{
-	req_lookup(ip_num);
-}
 
 /*
  * 클라이언트로 부터의 데이터 검색 요청
@@ -922,11 +927,15 @@ void Ilms::req_id_deregister(unsigned long ip_num)
 	if(!sc.next_value(id,DATA_SIZE))
 		return;
 
+	bool find = false;
 	if(my_filter->lookup(id))
-	{
-		remove(id, DATA_SIZE);
-	}
-	sc.buf[0] = REQ_SUCCESS;
+		if(remove(id, DATA_SIZE))
+			find = true;
+
+	if(find)
+		sc.buf[0] = REQ_SUCCESS;
+	else
+		sc.buf[0] = REQ_FAIL;
 	this->send_node(ip_num, sc.buf, sc.len);
 }
 

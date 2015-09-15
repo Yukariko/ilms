@@ -38,7 +38,7 @@ public:
 	int send_child(char *data);
 	int send_child(unsigned long ip_num, char *data);
 	int send_peer(char *data);
-	void send_top(char *data);
+	int send_top(char *data);
 	void send_id(unsigned long ip_num,char *id, const char *buf, int len);
 
 	void loc_process(unsigned long ip_num, char *id, char mode, unsigned char vlen, char *value, std::string& ret);
@@ -55,7 +55,6 @@ public:
 
 	//request
 	void req_id_register(unsigned long ip_num);
-	void req_loc_update(unsigned long ip_num);
 	void req_lookup(unsigned long ip_num);
 	void req_id_deregister(unsigned long ip_num);
 
