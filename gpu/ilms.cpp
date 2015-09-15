@@ -232,7 +232,6 @@ void Ilms::start()
 			case CMD_LOOKUP_DOWN: proc_lookup_down(); break;
 
 			case REQ_ID_REGISTER: req_id_register(ip_num); break;
-			case REQ_LOC_UPDATE: req_loc_update(ip_num); break;
 			case REQ_LOOKUP: req_lookup(ip_num); break;
 			case REQ_ID_DEREGISTER: req_id_deregister(ip_num); break;
 
