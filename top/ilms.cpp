@@ -940,9 +940,9 @@ void Ilms::req_lookup(unsigned long ip_num)
 
 void Ilms::req_id_deregister(unsigned long ip_num)
 {
-	char *data;
+	char *id;
 
-	if(!sc.next_value(data,DATA_SIZE))
+	if(!sc.next_value(id,DATA_SIZE))
 		return;
 
 	bool find = false;
@@ -959,15 +959,15 @@ void Ilms::req_id_deregister(unsigned long ip_num)
 
 void Ilms::peer_bf_update(unsigned long ip_num)
 {
-	char *data;
-	if(!sc.next_value(data,DATA_SIZE))
+	char *id;
+	if(!sc.next_value(id,DATA_SIZE))
 		return;
 
 	for(unsigned int i=0; i < peered.size(); i++)
 	{
 		if(ip_num == peered[i].get_ip_num())
 		{
-			peer_filter[i]->insert(data);
+			peer_filter[i]->insert(id);
 			break;
 		}
 	}
