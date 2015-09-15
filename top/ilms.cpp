@@ -736,7 +736,7 @@ void Ilms::proc_lookup(unsigned long ip_num)
 			for(size_t i=1+DATA_SIZE+4; i < sc.len; i++)
 				sc.buf[i-4] = sc.buf[i];
 			sc.len -= 4;
-			this->send_node(ip_num, sc.buf, sc.len);
+			this->send_node(ip_org_num, sc.buf, sc.len);
 		}
 	}
 }
@@ -770,10 +770,11 @@ void Ilms::proc_lookup_nack()
 		if(send_top(id) == 0)
 		{
 			sc.buf[0] = REQ_FAIL;
+			unsigned long ip_org_num = *(unsigned long *)&sc.buf[1+DATA_SIZE];
 			for(size_t i=1+DATA_SIZE+4; i < sc.len; i++)
 				sc.buf[i-4] = sc.buf[i];
 			sc.len -= 4;
-			this->send_node(ip_num, sc.buf, sc.len);
+			this->send_node(ip_org_num, sc.buf, sc.len);
 		}
 		return;
 	}
