@@ -823,7 +823,7 @@ void Ilms::req_id_register(unsigned long ip_num)
 	for(unsigned int i=0; i < peering.size(); i++)
 		this->send_node(peering[i].get_ip_num(), sc.buf, sc.len);
 
-	sc.buf[0] = REQ_SUCCEESS;
+	sc.buf[0] = REQ_SUCCESS;
 	this->send_node(ip_num, sc.buf, sc.len);
 }
 
