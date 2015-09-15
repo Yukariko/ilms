@@ -784,10 +784,10 @@ void Ilms::proc_lookup_nack()
 
 void Ilms::req_id_register(unsigned long ip_num)
 {
-	char *data;
+	char *id;
 	char *value;
 
-	if(!sc.next_value(data,DATA_SIZE))
+	if(!sc.next_value(id,DATA_SIZE))
 		return;
 
 	if(!sc.next_value(value))
@@ -805,15 +805,15 @@ void Ilms::req_id_register(unsigned long ip_num)
 		}
 	}
 
-	my_filter->insert(data);
+	my_filter->insert(id);
 
 	std::string loc = ":";
 	loc += value;
 
-	insert(data,DATA_SIZE, loc.c_str(), loc.size());
+	insert(id,DATA_SIZE, loc.c_str(), loc.size());
 
 	if(global_switch == MYREFRESH)
-		shadow_filter->insert(data);
+		shadow_filter->insert(id);
 
 	sc.buf[0] = TOP_BF_UPDATE;
 	for(unsigned int i=0; i < top.size(); i++)
