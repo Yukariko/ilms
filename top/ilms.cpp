@@ -822,6 +822,8 @@ void Ilms::req_id_register(unsigned long ip_num)
 	sc.buf[0] = PEER_BF_UPDATE;
 	for(unsigned int i=0; i < peering.size(); i++)
 		this->send_node(peering[i].get_ip_num(), sc.buf, sc.len);
+
+	sc.buf[0] = REQ_SUCCEESS;
 	this->send_node(ip_num, sc.buf, sc.len);
 }
 
