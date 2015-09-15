@@ -854,6 +854,10 @@ void Ilms::req_id_register(unsigned long ip_num)
 		this->send_node(peering[i].get_ip_num(), sc.buf, sc.len);
 
 	sc.buf[0] = REQ_SUCCESS;
+	for(size_t i=sc.len; i > 1 + DATA_SIZE; i--)
+		sc.buf[i] = sc.buf[i-1];
+	sc.len++;
+	sc.buf[1+DATA_SIZE] = 0;
 	this->send_node(ip_num, sc.buf, sc.len);
 }
 
@@ -979,6 +983,7 @@ void Ilms::req_id_deregister(unsigned long ip_num)
 		sc.buf[0] = REQ_SUCCESS;
 	else
 		sc.buf[0] = REQ_FAIL;
+	sc.buf[sc.len++] = 1;
 	this->send_node(ip_num, sc.buf, sc.len);
 }
 
