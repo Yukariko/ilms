@@ -54,7 +54,7 @@ int main()
 				else if(len == -1)
 					cout << oper[op] << " No ID" << endl;
 				else if(len < 2)
-					cout << oper[op] << "No LOC" << endl;
+					cout << oper[op] << " No LOC" << endl;
 				else
 					cout << value << endl;
 			}
