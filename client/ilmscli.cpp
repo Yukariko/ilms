@@ -98,7 +98,7 @@ int IlmsCli::req_loc_update(char mode, const string& id, const string& loc)
 	int ret = this->recieve(header);
 	if(ret < 0)
 		return 0;
-	return header[0] == REQ_SUCCESS? 1: -1;
+	return header[0] == REQ_SUCCESS? 1: 0;
 }
 
 /*
