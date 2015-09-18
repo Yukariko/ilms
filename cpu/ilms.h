@@ -75,6 +75,7 @@ public:
 	//test
 	void test_process();
 	void test_filter();
+	void print_log(const char *id, const char *mode, const char *state, unsigned char vlen = 0, const char *value = NULL);
 
 private:
 	static leveldb::DB* db;

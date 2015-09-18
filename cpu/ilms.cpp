@@ -200,7 +200,6 @@ void Ilms::start()
 		int len = recvfrom(sock, buf, BUF_SIZE, 0,
 					(struct sockaddr*)&clnt_adr, &clnt_adr_sz);
 
-		DEBUG("Recieve OK!");
 
 		if(len > 0)
 		{
@@ -214,10 +213,6 @@ void Ilms::start()
 
 			if(cmd >= 0 && cmd < 100)
 				protocol[cmd]++;
-
-			for(int i=0; i < len; i++)
-				std::cout << (int)buf[i] << " ";
-			std::cout << std::endl;
 
 			unsigned int ip_num = clnt_adr.sin_addr.s_addr;
 
@@ -250,6 +245,10 @@ const char *sProt[] = {
 	"CMD_BF_UPDATE", "CMD_LOOKUP", "CMD_LOOKUP_NACK", "CMD_LOOKUP_DOWN", "REQ_ID_REGISTER",
 	"REQ_LOOKUP", "REQ_ID_DEREGISTER", "PEER_BF_UPDATE", "PEER_LOOKUP",
 	"PEER_LOOKUP_DOWN"
+};
+
+const char *modes[] {
+	"GET", "SET", "SUB", "REP"
 };
 
 void Ilms::stat_run()
@@ -412,7 +411,14 @@ void Ilms::cmd_run()
 	}
 }
 
-
+void print_log(const char *id, const char *mode, const char *state, unsigned char vlen, const char *value)
+{
+	std::cout << "ID : " << id << ", ";
+	if(vlen)
+		std::cout << "LOC : " << value << ", ";
+	std::cout << mode << " " << state;
+	std::cout << std::endl;
+}
 /*
  * 버퍼 전송
  */
@@ -554,6 +560,7 @@ void Ilms::loc_process(unsigned int ip_num, char *id, char mode, unsigned char v
 	if(mode == LOC_LOOKUP)
 	{
 		send_id(ip_num,id,ret.c_str(),ret.length());
+		print_log(id, modes[mode], "Success", vlen, value);
 		return;
 	}
 	else if(mode == LOC_SET)
@@ -613,9 +620,15 @@ void Ilms::loc_process(unsigned int ip_num, char *id, char mode, unsigned char v
 	}
 
 	if(find == false)
+	{
 		sc.buf[0] = REQ_FAIL;
+		print_log(id, modes[mode], "Fail", vlen, value);
+	}
 	else
+	{
 		sc.buf[0] = REQ_SUCCESS;
+		print_log(id, modes[mode], "Success", vlen, value);
+	}
 	sc.buf[DATA_SIZE+1] = mode;
 	sc.buf[DATA_SIZE+2] = vlen;
 	for(size_t i=0; i < vlen; i++)
@@ -690,6 +703,7 @@ void Ilms::proc_lookup(unsigned int ip_num)
 	if(!sc.next_value(value, vlen))
 		return;
 
+	print_log(id, modes[mode], "Request", vlen, value);
 
 	my_filter->getBitArray(bitArray,id);
 	if(my_filter->lookBitArray(bitArray))
@@ -698,10 +712,11 @@ void Ilms::proc_lookup(unsigned int ip_num)
 		if(search(id,DATA_SIZE,ret))
 		{
 			loc_process(ip_org_num, id, mode, vlen, value, ret);
+			print_log(id, modes[mode], "Response", vlen, value);
 			return;
 		}
 	}
-
+	print_log(id, modes[mode], "Forward", vlen, value);
 	unsigned int depth = ntohl(*(unsigned int *)p_depth);
 
 	int count = 0;
@@ -785,6 +800,8 @@ void Ilms::req_id_register(unsigned int ip_num)
 	if(!sc.next_value(value))
 		return;
 
+	print_log(id, "REG", "Request", *(unsigned char*)(value-1), value);
+
 	my_filter->getBitArray(bitArray,id);
 	if(my_filter->lookBitArray(bitArray))
 	{
@@ -793,10 +810,12 @@ void Ilms::req_id_register(unsigned int ip_num)
 		{
 			sc.buf[0] = REQ_FAIL;
 			this->send_node(ip_num, sc.buf, sc.len);
+			print_log(id, "REG", "Fail", *(unsigned char*)(value-1), value);
+			print_log(id, "REG", "Response", *(unsigned char*)(value-1), value);
 			return;
 		}
 	}
-
+	print_log(id, "REG", "Forward", *(unsigned char*)(value-1), value);
 	my_filter->insert(id);
 
 	std::string loc = ":";
@@ -890,6 +909,8 @@ void Ilms::req_lookup(unsigned int ip_num)
 
 	sc = Scanner(sc.buf, len);
 
+	print_log(id, modes[mode], "Request", vlen, value);
+
 	my_filter->getBitArray(bitArray,id);
 	if(my_filter->lookBitArray(bitArray))
 	{
@@ -897,10 +918,12 @@ void Ilms::req_lookup(unsigned int ip_num)
 		if(search(id,DATA_SIZE,ret))
 		{
 			loc_process(ip_num, id, mode, vlen, value, ret);
+			print_log(id, modes[mode], "Response", vlen, value);
 			return;
 		}
 	}
 
+	print_log(id, modes[mode], "Forward", vlen, value);
 	*up_down = MARK_DOWN;
 	*(unsigned int *)p_depth = htonl(1);
 
@@ -936,17 +959,25 @@ void Ilms::req_id_deregister(unsigned int ip_num)
 	if(!sc.next_value(id,DATA_SIZE))
 		return;
 
+	print_log(id, "DEL", "Request");
 	bool find = false;
 	if(my_filter->lookup(id))
 		if(remove(id, DATA_SIZE))
 			find = true;
 
 	if(find)
+	{
 		sc.buf[0] = REQ_SUCCESS;
+		print_log(id, "DEL", "Success");
+	}
 	else
+	{
 		sc.buf[0] = REQ_FAIL;
+		print_log(id, "DEL", "Fail");
+	}
 	sc.buf[sc.len++] = 1;
 	this->send_node(ip_num, sc.buf, sc.len);
+	print_log(id, "DEL", "Response");
 }
 
 void Ilms::peer_bf_update(unsigned int ip_num)
