@@ -47,7 +47,7 @@ int main()
 			break;
 		case GET:
 			if(cin >> data)
-				len = ilms.req_lookup(data, value);
+				len = ilms.req_lookup(data);
 			break;
 		case REP:
 			if(cin >> data >> value)
