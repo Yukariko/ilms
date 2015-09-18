@@ -19,7 +19,7 @@
 #define BUF_SIZE 256
 #define PORT 7979
 #define REFRESH_PORT 7980
-#define DATA_SIZE 24
+#define ID_SIZE 24
 #define NTHREAD 64U
 #define DB_PATH "./db"
 #define REFRESH_FREQUENCY 60
@@ -72,6 +72,7 @@ public:
 
 	//test
 	void test_process();
+	void print_log(const char *id, const char *mode, const char *state, unsigned char vlen = 0, const char *value = NULL);
 
 private:
 	static leveldb::DB* db;

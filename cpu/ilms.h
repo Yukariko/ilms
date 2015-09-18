@@ -19,7 +19,7 @@
 #define BUF_SIZE 256
 #define PORT 7979
 #define REFRESH_PORT 7980
-#define DATA_SIZE 24
+#define ID_SIZE 24
 #define NTHREAD 64U
 #define DB_PATH "./db"
 #define REFRESH_FREQUENCY 60
@@ -36,14 +36,14 @@ public:
 	void start();
 	static void send_node(unsigned int ip_num,const char *buf,int len);
 	void send_refresh(unsigned int ip_num, unsigned char *filter);
-	int send_child(char *data);
-	int send_child(unsigned int ip_num, char *data);
-	int send_peer(char *data);
+	int send_child(char *id);
+	int send_child(unsigned int ip_num, char *id);
+	int send_peer(char *id);
 	void send_id(unsigned int ip_num, char *id, const char *buf, int len);
 
 	void loc_process(unsigned int ip_num, char *id, char mode, unsigned char vlen, char *value, std::string& ret);
 
-	//data
+	//id
 	void insert(char *key,int klen,const char *val,int vlen);
 	bool search(char *key,int klen,std::string &val);
 	bool remove(char *key,int klen);
