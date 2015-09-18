@@ -219,7 +219,7 @@ void Ilms::start()
 				std::cout << (int)buf[i] << " ";
 			std::cout << std::endl;
 
-			unsigned long ip_num = clnt_adr.sin_addr.s_addr;
+			unsigned int ip_num = clnt_adr.sin_addr.s_addr;
 
 			switch(cmd)
 			{
@@ -301,7 +301,7 @@ void Ilms::refresh_run()
 
 		while((ns = accept(sd, (struct sockaddr *)&cli,  (socklen_t *)&clientlen)) != -1)
 		{
-			unsigned long ip_num = cli.sin_addr.s_addr;
+			unsigned int ip_num = cli.sin_addr.s_addr;
 
 			unsigned char *fpt = shadow_filter->filter;
 			for(int len; (len = recv(ns, fpt, 4096, 0)) > 0; )
@@ -417,7 +417,7 @@ void Ilms::cmd_run()
  * 버퍼 전송
  */
 
-void Ilms::send_node(unsigned long ip_num,const char *buf,int len)
+void Ilms::send_node(unsigned int ip_num,const char *buf,int len)
 {
 	if(ip_num==0)
 		return;
@@ -435,7 +435,7 @@ void Ilms::send_node(unsigned long ip_num,const char *buf,int len)
 	DEBUG("Send OK!");
 }
 
-void Ilms::send_refresh(unsigned long ip_num, unsigned char *filter)
+void Ilms::send_refresh(unsigned int ip_num, unsigned char *filter)
 {
 	if(ip_num == 0)
 		return;
@@ -496,7 +496,7 @@ int Ilms::send_child(char *data)
 	return ret;
 }
 
-int Ilms::send_child(unsigned long ip_num, char *data)
+int Ilms::send_child(unsigned int ip_num, char *data)
 {
 	int ret = 0;
 	for(unsigned int i=0; i < child.size(); i++)
@@ -533,7 +533,7 @@ int Ilms::send_peer(char *data)
 	return ret;
 }
 
-void Ilms::send_id(unsigned long ip_num, char *id, const char *ret, int len)
+void Ilms::send_id(unsigned int ip_num, char *id, const char *ret, int len)
 {
 	char buf[BUF_SIZE];
 	int pos = 0;
@@ -548,7 +548,7 @@ void Ilms::send_id(unsigned long ip_num, char *id, const char *ret, int len)
 	this->send_node(ip_num, buf, pos);
 }
 
-void Ilms::loc_process(unsigned long ip_num, char *id, char mode, unsigned char vlen, char *value, std::string& ret)
+void Ilms::loc_process(unsigned int ip_num, char *id, char mode, unsigned char vlen, char *value, std::string& ret)
 {
 	bool find = false;
 	if(mode == LOC_LOOKUP)
@@ -629,7 +629,7 @@ void Ilms::loc_process(unsigned long ip_num, char *id, char mode, unsigned char 
  * 부모노드에도 추가해야 하므로 버퍼그대로 전송
  */
 
-void Ilms::proc_bf_update(unsigned long ip_num)
+void Ilms::proc_bf_update(unsigned int ip_num)
 {
 	char *data;
 	if(!sc.next_value(data,DATA_SIZE))
@@ -660,13 +660,13 @@ void Ilms::proc_bf_update(unsigned long ip_num)
  * 3) 자식필터에 데이터가 없다면 부모노드로 올라감. 부모노드에서 내려온 상태라면 부모에 검색 실패 전송
  */
 
-void Ilms::proc_lookup(unsigned long ip_num)
+void Ilms::proc_lookup(unsigned int ip_num)
 {
 	char *id;
 	if(!sc.next_value(id,DATA_SIZE))
 		return;
 
-	unsigned long ip_org_num;
+	unsigned int ip_org_num;
 	if(!sc.next_value(ip_org_num))
 		return;
 
@@ -702,11 +702,11 @@ void Ilms::proc_lookup(unsigned long ip_num)
 		}
 	}
 
-	unsigned long depth = ntohl(*(unsigned long *)p_depth);
+	unsigned int depth = ntohl(*(unsigned int *)p_depth);
 
 	int count = 0;
 
-	*(unsigned long *)p_depth = htonl(depth+1);
+	*(unsigned int *)p_depth = htonl(depth+1);
 
 	if(*up_down == MARK_UP)
 	{
@@ -727,7 +727,7 @@ void Ilms::proc_lookup(unsigned long ip_num)
 	}
 	else
 	{
-		*(unsigned long *)p_depth = htonl(depth);
+		*(unsigned int *)p_depth = htonl(depth);
 
 		*up_down = MARK_UP;
 
@@ -749,7 +749,7 @@ void Ilms::proc_lookup_nack()
 {
 	char *id = sc.get_cur();
 	char *p_depth = sc.get_cur() + DATA_SIZE + 4 + 1;
-	unsigned long depth = ntohl(*(unsigned long *)p_depth);
+	unsigned int depth = ntohl(*(unsigned int *)p_depth);
 
 	std::string ret;
 
@@ -762,7 +762,7 @@ void Ilms::proc_lookup_nack()
 	{
 		remove(id,DATA_SIZE+4);
 
-		*(unsigned long *)p_depth = htonl(depth-1);
+		*(unsigned int *)p_depth = htonl(depth-1);
 
 		if(depth == 1)
 			sc.buf[0] = CMD_LOOKUP;
@@ -774,7 +774,7 @@ void Ilms::proc_lookup_nack()
 }
 
 
-void Ilms::req_id_register(unsigned long ip_num)
+void Ilms::req_id_register(unsigned int ip_num)
 {
 	char *id;
 	char *value;
@@ -830,7 +830,7 @@ void Ilms::req_id_register(unsigned long ip_num)
  * 클라이언트는 자식이 아니므로 자식관련 처리과정이 생략됨
  */
 
-void Ilms::req_lookup(unsigned long ip_num)
+void Ilms::req_lookup(unsigned int ip_num)
 {
 	char *id;
 	if(!sc.next_value(id,DATA_SIZE))
@@ -857,14 +857,14 @@ void Ilms::req_lookup(unsigned long ip_num)
 		pos++;
 	}
 
-	*(unsigned long *)pos = ip_num;
+	*(unsigned int *)pos = ip_num;
 	pos += 4;
 
 	char *up_down = pos;
 	pos++;
 
 	char *p_depth = pos;
-	*(unsigned long *)p_depth = 0;
+	*(unsigned int *)p_depth = 0;
 	pos += 4;
 
 	*pos = mode;
@@ -902,7 +902,7 @@ void Ilms::req_lookup(unsigned long ip_num)
 	}
 
 	*up_down = MARK_DOWN;
-	*(unsigned long *)p_depth = htonl(1);
+	*(unsigned int *)p_depth = htonl(1);
 
 	int count = 0;
 
@@ -924,7 +924,7 @@ void Ilms::req_lookup(unsigned long ip_num)
 	else
 	{
 		*up_down = MARK_UP;
-		*(unsigned long *)p_depth = 0;
+		*(unsigned int *)p_depth = 0;
 		this->send_node(parent->get_ip_num(), sc.buf, sc.len);
 	}
 }
@@ -934,7 +934,7 @@ void Ilms::req_lookup(unsigned long ip_num)
  * 클라이언트는 자식이 아니므로 자식관련 처리과정이 생략됨
  */
 
-void Ilms::req_id_deregister(unsigned long ip_num)
+void Ilms::req_id_deregister(unsigned int ip_num)
 {
 	char *id;
 
@@ -954,7 +954,7 @@ void Ilms::req_id_deregister(unsigned long ip_num)
 	this->send_node(ip_num, sc.buf, sc.len);
 }
 
-void Ilms::peer_bf_update(unsigned long ip_num)
+void Ilms::peer_bf_update(unsigned int ip_num)
 {
 	char *id;
 	if(!sc.next_value(id,DATA_SIZE))
@@ -970,13 +970,13 @@ void Ilms::peer_bf_update(unsigned long ip_num)
 	}
 }
 
-void Ilms::peer_lookup(unsigned long ip_num)
+void Ilms::peer_lookup(unsigned int ip_num)
 {
 	char *id;
 	if(!sc.next_value(id,DATA_SIZE))
 		return;
 
-	unsigned long ip_org_num;
+	unsigned int ip_org_num;
 	if(!sc.next_value(ip_org_num))
 		return;
 
@@ -1022,7 +1022,7 @@ void Ilms::proc_lookup_down()
 	if(!sc.next_value(id,DATA_SIZE))
 		return;
 
-	unsigned long ip_org_num;
+	unsigned int ip_org_num;
 	if(!sc.next_value(ip_org_num))
 		return;
 
@@ -1060,7 +1060,7 @@ void Ilms::peer_lookup_down()
 	if(!sc.next_value(id,DATA_SIZE))
 		return;
 
-	unsigned long ip_org_num;
+	unsigned int ip_org_num;
 	if(!sc.next_value(ip_org_num))
 		return;
 
