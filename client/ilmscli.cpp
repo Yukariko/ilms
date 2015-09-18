@@ -100,7 +100,7 @@ bool IlmsCli::req_id_register(const string& id, const string& loc)
 	len += header[len] + 1;
 
 	this->send(header,len);
-	for(int i=1; i < RETRANSMISSION_FREQUENCY; i++)
+	for(int i=0; i < RETRANSMISSION_FREQUENCY; i++)
 	{
 		int rlen = this->recieve(response);
 		if(rlen > 0)
@@ -127,7 +127,7 @@ bool IlmsCli::req_id_register(const string& id, const string& loc)
 				i--;
 			}
 		}
-		else
+		else if(i != RETRANSMISSION_FREQUENCY - 1)
 		{
 			std::cout << "ID : " << id << ", REG Retransmission..." << std::endl;
 			this->send(header,len);
@@ -163,7 +163,7 @@ int IlmsCli::req_loc_update(char mode, const string& id, const string& loc)
 	len += header[len] + 1;
 
 	this->send(header,len);
-	for(int i=1; i < RETRANSMISSION_FREQUENCY; i++)
+	for(int i=0; i < RETRANSMISSION_FREQUENCY; i++)
 	{
 		int rlen = this->recieve(response);
 		if(rlen > 0)
@@ -199,9 +199,9 @@ int IlmsCli::req_loc_update(char mode, const string& id, const string& loc)
 				i--;
 			}
 		}
-		else
+		else if(i != RETRANSMISSION_FREQUENCY - 1)
 		{
-			std::cout << "ID : " << id << ", LOC : " << loc << " " << modes[mode] << " Retransmission..." << std::endl;
+			std::cout << "ID : " << id << ", LOC : " << loc << ", " << modes[mode] << " Retransmission..." << std::endl;
 			this->send(header,len);
 		}
 	}
@@ -234,7 +234,7 @@ int IlmsCli::req_lookup(const string& id)
 
 
 	this->send(header,len);
-	for(int i=1; i < RETRANSMISSION_FREQUENCY; i++)
+	for(int i=0; i < RETRANSMISSION_FREQUENCY; i++)
 	{
 		int rlen = this->recieve(response);
 		if(rlen > 0)
@@ -262,9 +262,9 @@ int IlmsCli::req_lookup(const string& id)
 				i--;
 			}
 		}
-		else
+		else if(i != RETRANSMISSION_FREQUENCY - 1)
 		{
-			std::cout << "ID : " << id << modes[0] << " Retransmission..." << std::endl;
+			std::cout << "ID : " << id << ", " << modes[0] << " Retransmission..." << std::endl;
 			this->send(header,len);
 		}
 	}
@@ -292,7 +292,7 @@ bool IlmsCli::req_id_deregister(const string& id)
 	}
 
 	this->send(header,len);
-	for(int i=1; i < RETRANSMISSION_FREQUENCY; i++)
+	for(int i=0; i < RETRANSMISSION_FREQUENCY; i++)
 	{
 		int rlen = this->recieve(response);
 		if(rlen > 0)
@@ -319,7 +319,7 @@ bool IlmsCli::req_id_deregister(const string& id)
 				i--;
 			}
 		}
-		else
+		else if(i != RETRANSMISSION_FREQUENCY - 1)
 		{
 			std::cout << "ID : " << id << ", DEL Retransmission..." << std::endl;
 			this->send(header,len);
