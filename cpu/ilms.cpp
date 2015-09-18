@@ -881,15 +881,12 @@ void Ilms::req_lookup(unsigned long ip_num)
 
 	int len = (int)(pos - new_packet);
 	for(int i=0; i < len; i++)
-	{
 		sc.buf[i] = new_packet[i];
-		if(&new_packet[i] == up_down)
-			up_down = &sc.buf[i];
-		else if(&new_packet[i] == p_depth)
-			p_depth = &sc.buf[i];
-	}
 
 	value = sc.buf + 1 + DATA_SIZE + 4 + 1 + 4 + 1 + 1;
+
+	up_down = sc.buf + 1 + DATA_SIZE + 4;
+	p_depth = sc.buf + 1 + DATA_SIZE + 4 + 1;
 
 	sc = Scanner(sc.buf, len);
 
