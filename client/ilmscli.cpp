@@ -205,7 +205,7 @@ int IlmsCli::req_loc_update(char mode, const string& id, const string& loc)
 			this->send(header,len);
 		}
 	}
-	std::cout << "ID : " << id << ", LOC : " << loc << " " << modes[mode] << " Fail" << std::endl;
+	std::cout << "ID : " << id << ", LOC : " << loc << ", " << modes[mode] << " Fail" << std::endl;
 	return false;
 }
 
@@ -268,7 +268,7 @@ int IlmsCli::req_lookup(const string& id)
 			this->send(header,len);
 		}
 	}
-	std::cout << "ID : " << id << modes[0] << " Fail" << std::endl;
+	std::cout << "ID : " << id << ", " << modes[0] << " Fail" << std::endl;
 	return len;
 }
 
