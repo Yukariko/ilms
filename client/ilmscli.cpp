@@ -240,7 +240,7 @@ int IlmsCli::req_lookup(const string& id)
 		if(rlen > 0)
 		{
 			int prot = print_response(response, rlen);
-			if(mode == prot)
+			if(prot == LOC_LOOKUP)
 			{
 				bool find = true;
 				for(size_t i=0; i < ID_SIZE; i++)
