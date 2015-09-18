@@ -34,14 +34,14 @@ public:
 	~Ilms();
 
 	void start();
-	static void send_node(unsigned long ip_num,const char *buf,int len);
-	void send_refresh(unsigned long ip_num, unsigned char *filter);
+	static void send_node(unsigned int ip_num,const char *buf,int len);
+	void send_refresh(unsigned int ip_num, unsigned char *filter);
 	int send_child(char *data);
-	int send_child(unsigned long ip_num, char *data);
+	int send_child(unsigned int ip_num, char *data);
 	int send_peer(char *data);
-	void send_id(unsigned long ip_num, char *id, const char *buf, int len);
+	void send_id(unsigned int ip_num, char *id, const char *buf, int len);
 
-	void loc_process(unsigned long ip_num, char *id, char mode, unsigned char vlen, char *value, std::string& ret);
+	void loc_process(unsigned int ip_num, char *id, char mode, unsigned char vlen, char *value, std::string& ret);
 
 	//data
 	void insert(char *key,int klen,const char *val,int vlen);
@@ -50,19 +50,19 @@ public:
 
 
 	//process
-	void proc_bf_update(unsigned long ip_num);
-	void proc_lookup(unsigned long ip_num);
+	void proc_bf_update(unsigned int ip_num);
+	void proc_lookup(unsigned int ip_num);
 	void proc_lookup_nack();
 	void proc_lookup_down();
 
 	//request
-	void req_id_register(unsigned long ip_num);
-	void req_lookup(unsigned long ip_num);
-	void req_id_deregister(unsigned long ip_num);
+	void req_id_register(unsigned int ip_num);
+	void req_lookup(unsigned int ip_num);
+	void req_id_deregister(unsigned int ip_num);
 
 	//peer
-	void peer_bf_update(unsigned long ip_num);
-	void peer_lookup(unsigned long ip_num);
+	void peer_bf_update(unsigned int ip_num);
+	void peer_lookup(unsigned int ip_num);
 	void peer_lookup_down();
 
 	//thread
