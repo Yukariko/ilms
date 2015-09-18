@@ -893,6 +893,11 @@ void Ilms::req_lookup(unsigned long ip_num)
 
 	sc = Scanner(sc.buf, len);
 
+
+	for(int i=0; i < len; i++)
+		std::cout << (int)sc.buf[i] << " ";
+	std::cout << std::endl;
+
 	my_filter->getBitArray(bitArray,id);
 	if(my_filter->lookBitArray(bitArray))
 	{
