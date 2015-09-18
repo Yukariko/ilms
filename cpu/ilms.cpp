@@ -910,11 +910,6 @@ void Ilms::req_lookup(unsigned int ip_num)
 	count += send_peer(id);
 
 	sc.buf[0] = CMD_LOOKUP;
-
-	for(int i=0; i < sc.len; i++)
-		std::cout << (int)sc.buf[i] << " ";
-	std::cout << std::endl;
-
 	count += send_child(id);
 
 	if(count)

@@ -43,7 +43,7 @@ int Node::length()
  * 비교를 더 빠르게 하기 위함
  */
 
-unsigned long Node::get_ip_num()
+unsigned int Node::get_ip_num()
 {
 	return ip_num;
 }

@@ -12,11 +12,11 @@ public:
 	Node(std::string ip);
 	const char *get_ip();
 	int length();
-	unsigned long get_ip_num();
+	unsigned int get_ip_num();
 
 private:
 	std::string ip;
-	unsigned long ip_num;
+	unsigned int ip_num;
 };
 
 class Tree
