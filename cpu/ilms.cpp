@@ -412,6 +412,9 @@ void Ilms::cmd_run()
 			std::string id;
 			std::cin >> id;
 
+			for(size_t i=id.length(); i < ID_SIZE; i++)
+				id += '\0';
+
 			std::string ret;
 			if(search(id.c_str(),ID_SIZE,ret))
 				std::cout << "[" << id.c_str() << "] " << ret << std::endl;
