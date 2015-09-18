@@ -215,6 +215,10 @@ void Ilms::start()
 			if(cmd >= 0 && cmd < 100)
 				protocol[cmd]++;
 
+			for(int i=0; i < len; i++)
+				std::cout << (int)buf[i] << " ";
+			std::cout << std::endl;
+
 			unsigned long ip_num = clnt_adr.sin_addr.s_addr;
 
 			switch(cmd)
