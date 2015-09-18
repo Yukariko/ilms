@@ -390,9 +390,8 @@ void Ilms::refresh_run()
 void Ilms::cmd_run()
 {
 	std::string c;
-	while(1)
+	while(std::cin >> c)
 	{
-		std::cin >> c;
 		if(c == "show")
 		{
 			std::cout << "--------------------" << std::endl;
@@ -423,6 +422,17 @@ void Ilms::cmd_run()
 			delete it;
 
 			std::cout << "delete complete" << std::endl;
+		}
+		else if(c == "pick")
+		{
+			std::string id;
+			cin >> id;
+
+			std::string ret;
+			if(search(id.c_str(),ID_SIZE,ret))
+				std::cout << "[" << id.c_str() << "] " << ret << std::endl;
+			else
+				std::cout << "[" << id.c_str() << "] " << "Not Found" << std::endl;
 		}
 	}
 }
