@@ -414,7 +414,7 @@ void Ilms::cmd_run()
 		else if(c == "pick")
 		{
 			std::string id;
-			cin >> id;
+			std::cin >> id;
 
 			std::string ret;
 			if(search(id.c_str(),ID_SIZE,ret))
