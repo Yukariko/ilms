@@ -815,7 +815,6 @@ void Ilms::req_id_register(unsigned int ip_num)
 			return;
 		}
 	}
-	print_log(id, "REG", "Forward", *(unsigned char*)(value-1), value);
 	my_filter->insert(id);
 
 	std::string loc = ":";
@@ -836,6 +835,8 @@ void Ilms::req_id_register(unsigned int ip_num)
 	sc.buf[0] = REQ_SUCCESS;
 	sc.buf[1+DATA_SIZE] = 0;
 	sc.len = 1 + DATA_SIZE + 1;
+	print_log(id, "REG", "Success", *(unsigned char*)(value-1), value);
+	print_log(id, "REG", "Response", *(unsigned char*)(value-1), value);
 	this->send_node(ip_num, sc.buf, sc.len);
 }
 
