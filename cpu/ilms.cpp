@@ -856,7 +856,7 @@ void Ilms::req_lookup(unsigned long ip_num)
 	*(unsigned long *)pos = ip_num;
 	pos += 4;
 
-	char &up_down = *pos;
+	char *up_down = pos;
 	pos++;
 
 	char *p_depth = pos;
@@ -877,7 +877,13 @@ void Ilms::req_lookup(unsigned long ip_num)
 
 	int len = (int)(pos - new_packet);
 	for(int i=0; i < len; i++)
+	{
 		sc.buf[i] = new_packet[i];
+		if(&new_packet[i] == up_down)
+			up_down = &sc.buf[i];
+		else if(&new_packet[i] == p_depth)
+			p_depth = &sc.buf[i];
+	}
 
 	value = sc.buf + 1 + DATA_SIZE + 4 + 1 + 4 + 1 + 1;
 
@@ -894,7 +900,7 @@ void Ilms::req_lookup(unsigned long ip_num)
 		}
 	}
 
-	up_down = MARK_DOWN;
+	*up_down = MARK_DOWN;
 	*(unsigned long *)p_depth = htonl(1);
 
 	int count = 0;
@@ -911,7 +917,7 @@ void Ilms::req_lookup(unsigned long ip_num)
 	}
 	else
 	{
-		up_down = MARK_UP;
+		*up_down = MARK_UP;
 		*(unsigned long *)p_depth = 0;
 		this->send_node(parent->get_ip_num(), sc.buf, sc.len);
 	}
