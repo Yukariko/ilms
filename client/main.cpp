@@ -6,8 +6,8 @@
 
 using namespace std;
 
-const char *oper[] = {"IP","REG","SET","GET","REP","SUB","DELETE","EXIT",NULL};
-enum {IP,REG,SET,GET,REP,SUB,DELETE,EXIT,ERROR};
+const char *oper[] = {"IP","REG","SET","GET","REP","SUB","DEL","EXIT",NULL};
+enum {IP,REG,SET,GET,REP,SUB,DEL,EXIT,ERROR};
 
 int main()
 {
@@ -47,17 +47,7 @@ int main()
 			break;
 		case GET:
 			if(cin >> data)
-			{
 				len = ilms.req_lookup(data, value);
-				if(len == -2)
-					cout << oper[op] << " FAIL" << endl;
-				else if(len == -1)
-					cout << oper[op] << " No ID" << endl;
-				else if(len < 2)
-					cout << oper[op] << " No LOC" << endl;
-				else
-					cout << value << endl;
-			}
 			break;
 		case REP:
 			if(cin >> data >> value)
@@ -67,7 +57,7 @@ int main()
 			if(cin >> data >> value)
 				ret = ilms.req_loc_update(LOC_SUB, data, value);
 			break;
-		case DELETE:
+		case DEL:
 			if(cin >> data)
 				ret = ilms.req_id_deregister(data);
 			break;
@@ -77,8 +67,8 @@ int main()
 			cout << "ERROR" << endl;
 		}
 
-		if(op == REG || op == SET || op == REP || op == SUB || op == DELETE)
-			cout << oper[op] << " " << (ret == 1? "SUCCESS": ret == 0? "FAIL" : "No ID") << endl;
+		//if(op == REG || op == SET || op == REP || op == SUB || op == DELETE)
+		//	cout << oper[op] << " " << (ret == 1? "SUCCESS": ret == 0? "FAIL" : "No ID") << endl;
 	}
 	return 0;
 }

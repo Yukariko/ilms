@@ -67,6 +67,11 @@ bool IlmsCli::req_id_register(const string& id, const string& loc)
 
 	this->send(header,len);
 	this->recieve(header);
+
+	std::cout << "ID : " << id << ", ";
+	if(loc.length())
+		std::cout << "LOC : " << loc << ", ";
+	std::cout << "REG " << (header[0] == REQ_SUCCESS? "Success" : "Fail") << std::endl;
 	return header[0] == REQ_SUCCESS;
 }
 
@@ -74,6 +79,10 @@ bool IlmsCli::req_id_register(const string& id, const string& loc)
 /*
  * 데이터 추가 요청
  */
+
+const char* modes[] = {
+	"GET", "SET", "SUB", "REP"
+};
 
 int IlmsCli::req_loc_update(char mode, const string& id, const string& loc)
 {
@@ -95,7 +104,14 @@ int IlmsCli::req_loc_update(char mode, const string& id, const string& loc)
 	len += header[len] + 1;
 
 	this->send(header,len);
+
 	int ret = this->recieve(header);
+
+	std::cout << "ID : " << id << ", ";
+	if(loc.length())
+		std::cout << "LOC : " << loc << ", ";
+	std::cout << modes[mode] << " " << (header[0] == REQ_SUCCESS? "Success" : "Fail") << std::endl;
+
 	if(ret < 0)
 		return 0;
 	return header[0] == REQ_SUCCESS? 1: 0;
@@ -126,14 +142,23 @@ int IlmsCli::req_lookup(const string& id, string& buf)
 
 	this->send(header,len);
 	len = this->recieve(header);
+
+	std::cout << "ID : " << id << ", ";
 	if(len < 0)
+	{
+		std::cout << modes[0] << " Fail" << std::endl;
 		return -2;
+	}
 
 	if(header[0] == REQ_FAIL)
+	{
+		std::cout << modes[0] << " No ID" << std::endl;
 		return -1;
+	}
 
 	header[len] = 0;
 	buf = header + ID_SIZE + 3;
+	std::cout << "LOC : " << (buf.length() < 2? "No LOC" : buf) << std::endl;
 	return buf.length();
 }
 
@@ -157,6 +182,10 @@ bool IlmsCli::req_id_deregister(const string& id)
 
 	this->send(header,len);
 	this->recieve(header);
+
+	std::cout << "ID : " << id << ", ";
+	std::cout << "DEL " << (header[0] == REQ_SUCCESS? "Success" : "Fail") << std::endl;
+
 	return header[0] == REQ_SUCCESS;
 }
 
