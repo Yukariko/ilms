@@ -1,3 +1,3 @@
 #!/bin/bash
 
-watch "nvidia-smi | grep \"%\""
+watch "nvidia-smi | grep \"MiB\""
