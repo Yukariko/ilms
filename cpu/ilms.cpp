@@ -1141,7 +1141,7 @@ void Ilms::insert(char *key,int klen,const char *val,int vlen)
  * DB에 데이터 검색
  */
 
-bool Ilms::search(char *key,int klen,std::string &val)
+bool Ilms::search(const char *key,int klen,std::string &val)
 {
 	leveldb::Status s = db->Get(leveldb::ReadOptions(),leveldb::Slice(key,klen),&val);
 	return s.ok();

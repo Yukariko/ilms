@@ -45,7 +45,7 @@ public:
 
 	//id
 	void insert(char *key,int klen,const char *val,int vlen);
-	bool search(char *key,int klen,std::string &val);
+	bool search(const char *key,int klen,std::string &val);
 	bool remove(char *key,int klen);
 
 
