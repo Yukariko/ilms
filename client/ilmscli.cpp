@@ -66,11 +66,11 @@ int IlmsCli::print_response(char *buf, int len)
 		{
 			if(buf[1+ID_SIZE+1])
 				std::cout << "LOC : " << buf+1+ID_SIZE+1+1 << ", ";
-			std::cout << modes[mode] << " " << (header[0] == REQ_SUCCESS? "Success" : "Fail") << std::endl;
+			std::cout << modes[mode] << " " << (buf[0] == REQ_SUCCESS? "Success" : "Fail") << std::endl;
 		}
 		else
 		{
-			if(header[0] == REQ_FAIL)
+			if(buf[0] == REQ_FAIL)
 				std::cout << modes[0] << " No ID" << std::endl;
 			else
 				std::cout << "LOC : " << (buf[1+ID_SIZE+1] < 2? "No LOC" : buf+1+ID_SIZE+1+1) << std::endl;
