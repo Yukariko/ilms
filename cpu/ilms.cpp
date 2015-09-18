@@ -411,7 +411,7 @@ void Ilms::cmd_run()
 	}
 }
 
-void print_log(const char *id, const char *mode, const char *state, unsigned char vlen, const char *value)
+void Ilms::print_log(const char *id, const char *mode, const char *state, unsigned char vlen, const char *value)
 {
 	std::cout << "ID : " << id << ", ";
 	if(vlen)
