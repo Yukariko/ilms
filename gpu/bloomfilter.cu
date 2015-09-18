@@ -47,10 +47,8 @@ __global__ void cudaLookFilters(unsigned char **filters, long long *bitArray, un
 
 __global__ void cudaMergeFilter(unsigned char *dstFilter, unsigned char *srcFilter)
 {
-	int idx = threadIdx.x * 1024;
-
-	for(int i=0; i < 1024; i++)
-		dstFilter[idx + i] |= srcFilter[idx + i];
+	int idx = blockIdx.x * 1024 + threadIdx.x;
+	dstFilter[idx] |= srcFilter[idx];
 }
 
 Bloomfilter::Bloomfilter(long long size, int numHash,long long (**hash)(const char *))
@@ -167,7 +165,9 @@ void Bloomfilter::zeroFilter()
 
 void Bloomfilter::mergeFilter(unsigned char *filter)
 {
-	cudaMergeFilter<<<1,size / 8 / 1024>>>(this->filter, filter);
+	dim3 block(1024*2);
+	dim3 thread(1024);
+	cudaMergeFilter<<<block, thread>>>(this->filter, filter);
 }
 
 

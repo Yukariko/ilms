@@ -317,7 +317,6 @@ void Ilms::refresh_run()
 
 			close(ns);
 			global_switch = CHILDREFRESH;
-			shadow_filter->setFilter(filter);
 
 			for(unsigned int i=0; i < child.size(); i++)
 			{
