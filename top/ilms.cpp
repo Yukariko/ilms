@@ -736,7 +736,6 @@ void Ilms::proc_lookup(unsigned int ip_num)
 			return;
 		}
 	}
-	print_log(id, modes[mode], "Forward", vlen, value);
 	unsigned int depth = ntohl(*(unsigned int *)p_depth);
 
 	int count = 0;
@@ -765,6 +764,8 @@ void Ilms::proc_lookup(unsigned int ip_num)
 		sc.buf[0] = TOP_LOOKUP;
 		if(send_top(id) == 0)
 		{
+			print_log(id, modes[mode], "Fail", vlen, value);
+			print_log(id, modes[mode], "Response", vlen, value);
 			sc.buf[0] = REQ_FAIL;
 			for(size_t i=1+ID_SIZE+4; i < sc.len; i++)
 				sc.buf[i-4] = sc.buf[i];
@@ -975,6 +976,8 @@ void Ilms::req_lookup(unsigned int ip_num)
 		sc.buf[0] = TOP_LOOKUP;
 		if(send_top(id) == 0)
 		{
+			print_log(id, modes[mode], "Fail", vlen, value);
+			print_log(id, modes[mode], "Response", vlen, value);
 			sc.buf[0] = REQ_FAIL;
 			for(size_t i=1+ID_SIZE+4; i < sc.len; i++)
 				sc.buf[i-4] = sc.buf[i];
