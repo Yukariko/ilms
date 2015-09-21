@@ -771,8 +771,10 @@ void Ilms::proc_lookup(unsigned int ip_num)
 				sc.buf[i-4] = sc.buf[i];
 			sc.len -= 4;
 			this->send_node(ip_org_num, sc.buf, sc.len);
+			return;
 		}
 	}
+	print_log(id, modes[mode], "Forward", vlen, value);
 }
 
 
@@ -955,7 +957,6 @@ void Ilms::req_lookup(unsigned int ip_num)
 		}
 	}
 
-	print_log(id, modes[mode], "Forward", vlen, value);
 	*up_down = MARK_DOWN;
 	*(unsigned int *)p_depth = htonl(1);
 
@@ -983,8 +984,10 @@ void Ilms::req_lookup(unsigned int ip_num)
 				sc.buf[i-4] = sc.buf[i];
 			sc.len -= 4;
 			this->send_node(ip_num, sc.buf, sc.len);
+			return;
 		}
 	}
+	print_log(id, modes[mode], "Forward", vlen, value);
 }
 
 /*
