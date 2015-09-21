@@ -33,7 +33,7 @@
 #define MYREFRESH							0x01
 #define CHILDREFRESH					0x02
 
-#define MODE 1
+//#define MODE 1
 #ifdef MODE
 #define DEBUG(s) (std::cout << s << std::endl)
 #endif
