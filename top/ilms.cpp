@@ -351,7 +351,6 @@ void Ilms::refresh_run()
 	{
 		while(1)
 		{
-			sleep(REFRESH_FREQUENCY);
 			global_switch = MYREFRESH;
 			shadow_filter->zeroFilter();
 
@@ -371,6 +370,7 @@ void Ilms::refresh_run()
 
 			for(size_t i=0; i < top.size(); i++)
 				send_refresh(top[i].get_ip_num(), shadow_filter->filter);
+			sleep(REFRESH_FREQUENCY);
 		}
 	}
 }
@@ -466,7 +466,7 @@ void Ilms::send_refresh(unsigned int ip_num, unsigned char *filter)
 	if(sd == -1)
 	{
 		perror("sock open");
-		exit(1);
+		return;
 	}
 
 	struct sockaddr_in clnt_adr;
@@ -479,7 +479,7 @@ void Ilms::send_refresh(unsigned int ip_num, unsigned char *filter)
 	if(connect(sd, (struct sockaddr *)&clnt_adr, sizeof(clnt_adr)) == -1)
 	{
 		perror("connect");
-		exit(1);
+		return;
 	}
 
 	unsigned char *fpt = filter;

@@ -347,7 +347,6 @@ void Ilms::refresh_run()
 	{
 		while(1)
 		{
-			sleep(REFRESH_FREQUENCY);
 			global_switch = MYREFRESH;
 			shadow_filter->zeroFilter();
 
@@ -367,6 +366,7 @@ void Ilms::refresh_run()
 
 			my_filter->setFilter(shadow_filter->filter);
 			send_refresh(parent->get_ip_num(), shadow_filter->filter);
+			sleep(REFRESH_FREQUENCY);
 		}
 	}
 }
@@ -463,7 +463,7 @@ void Ilms::send_refresh(unsigned int ip_num, unsigned char *filter)
 	if(sd == -1)
 	{
 		perror("sock open");
-		exit(1);
+		return;
 	}
 
 	struct sockaddr_in clnt_adr;
@@ -476,7 +476,7 @@ void Ilms::send_refresh(unsigned int ip_num, unsigned char *filter)
 	if(connect(sd, (struct sockaddr *)&clnt_adr, sizeof(clnt_adr)) == -1)
 	{
 		perror("connect");
-		exit(1);
+		return;
 	}
 
 	unsigned char *fpt = filter;
@@ -573,7 +573,7 @@ void Ilms::loc_process(unsigned int ip_num, char *id, char mode, unsigned char v
 	if(mode == LOC_LOOKUP)
 	{
 		send_id(ip_num,id,ret.c_str(),ret.length());
-		print_log(id, modes[mode], "Success", vlen, value);
+		print_log(id, modes[(int)mode], "Success", vlen, value);
 		return;
 	}
 	else if(mode == LOC_SET)
@@ -635,12 +635,12 @@ void Ilms::loc_process(unsigned int ip_num, char *id, char mode, unsigned char v
 	if(find == false)
 	{
 		sc.buf[0] = REQ_FAIL;
-		print_log(id, modes[mode], "Fail", vlen, value);
+		print_log(id, modes[(int)mode], "Fail", vlen, value);
 	}
 	else
 	{
 		sc.buf[0] = REQ_SUCCESS;
-		print_log(id, modes[mode], "Success", vlen, value);
+		print_log(id, modes[(int)mode], "Success", vlen, value);
 	}
 	sc.buf[ID_SIZE+1] = mode;
 	sc.buf[ID_SIZE+2] = vlen;
@@ -716,7 +716,7 @@ void Ilms::proc_lookup(unsigned int ip_num)
 	if(!sc.next_value(value, vlen))
 		return;
 
-	print_log(id, modes[mode], "Request", vlen, value);
+	print_log(id, modes[(int)mode], "Request", vlen, value);
 
 	my_filter->getBitArray(bitArray,id);
 	if(my_filter->lookBitArray(bitArray))
@@ -725,11 +725,10 @@ void Ilms::proc_lookup(unsigned int ip_num)
 		if(search(id,ID_SIZE,ret))
 		{
 			loc_process(ip_org_num, id, mode, vlen, value, ret);
-			print_log(id, modes[mode], "Response", vlen, value);
+			print_log(id, modes[(int)mode], "Response", vlen, value);
 			return;
 		}
 	}
-	print_log(id, modes[mode], "Forward", vlen, value);
 	unsigned int depth = ntohl(*(unsigned int *)p_depth);
 
 	int count = 0;
@@ -751,6 +750,7 @@ void Ilms::proc_lookup(unsigned int ip_num)
 
 	if(count)
 	{
+		print_log(id, modes[(int)mode], "Forward", vlen, value);
 		insert(id,ID_SIZE+4, (char *)&count, sizeof(count));
 	}
 	else
@@ -759,11 +759,32 @@ void Ilms::proc_lookup(unsigned int ip_num)
 
 		*up_down = MARK_UP;
 
-		if(depth > 0)
-			sc.buf[0] = CMD_LOOKUP_NACK;
+		if(parent->get_ip_num())
+		{
+			if(depth > 0)
+			{
+				print_log(id, modes[(int)mode], "Send Nack", vlen, value);
+				sc.buf[0] = CMD_LOOKUP_NACK;
+			}
+			else
+			{
+				print_log(id, modes[(int)mode], "Forward", vlen, value);
+				sc.buf[0] = CMD_LOOKUP;
+			}
+			
+			this->send_node(parent->get_ip_num(), sc.buf, sc.len);
+		}
 		else
-			sc.buf[0] = CMD_LOOKUP;
-		this->send_node(parent->get_ip_num(), sc.buf, sc.len);
+		{
+			print_log(id, modes[(int)mode], "Fail", vlen, value);
+			print_log(id, modes[(int)mode], "Response", vlen, value);
+			sc.buf[0] = REQ_FAIL;
+			for(size_t i=1+ID_SIZE+4+1+4; i < sc.len; i++)
+				sc.buf[i-9] = sc.buf[i];
+			sc.len -= 9;
+			this->send_node(ip_org_num, sc.buf, sc.len);
+			return;
+		}
 	}
 }
 
@@ -779,6 +800,9 @@ void Ilms::proc_lookup_nack()
 	char *p_depth = sc.get_cur() + ID_SIZE + 4 + 1;
 	unsigned int depth = ntohl(*(unsigned int *)p_depth);
 
+	char *mode = sc.get_cur() + ID_SIZE + 4 + 1 + 4;
+	print_log(id, modes[(int)*mode], "Receive Nack");
+
 	std::string ret;
 
 	if(!search(id,ID_SIZE+4,ret))
@@ -792,9 +816,28 @@ void Ilms::proc_lookup_nack()
 
 		*(unsigned int *)p_depth = htonl(depth-1);
 
-		if(depth == 1)
-			sc.buf[0] = CMD_LOOKUP;
-		this->send_node(parent->get_ip_num(), sc.buf, sc.len);
+		if(parent->get_ip_num())
+		{
+			if(depth == 1)
+			{
+				print_log(id, modes[(int)*mode], "Forward");
+				sc.buf[0] = CMD_LOOKUP;
+			}
+			else
+				print_log(id, modes[(int)*mode], "Send Nack");
+			this->send_node(parent->get_ip_num(), sc.buf, sc.len);
+		}
+		else
+		{
+			print_log(id, modes[(int)*mode], "Fail");
+			print_log(id, modes[(int)*mode], "Response");
+			sc.buf[0] = REQ_FAIL;
+			unsigned int ip_org_num = *(unsigned int *)&sc.buf[1+ID_SIZE];
+			for(size_t i=1+ID_SIZE+4+1+4; i < sc.len; i++)
+				sc.buf[i-9] = sc.buf[i];
+			sc.len -= 9;
+			this->send_node(ip_org_num, sc.buf, sc.len);
+		}
 		return;
 	}
 
@@ -924,7 +967,7 @@ void Ilms::req_lookup(unsigned int ip_num)
 
 	sc = Scanner(sc.buf, len);
 
-	print_log(id, modes[mode], "Request", vlen, value);
+	print_log(id, modes[(int)mode], "Request", vlen, value);
 
 	my_filter->getBitArray(bitArray,id);
 	if(my_filter->lookBitArray(bitArray))
@@ -933,12 +976,11 @@ void Ilms::req_lookup(unsigned int ip_num)
 		if(search(id,ID_SIZE,ret))
 		{
 			loc_process(ip_num, id, mode, vlen, value, ret);
-			print_log(id, modes[mode], "Response", vlen, value);
+			print_log(id, modes[(int)mode], "Response", vlen, value);
 			return;
 		}
 	}
 
-	print_log(id, modes[mode], "Forward", vlen, value);
 	*up_down = MARK_DOWN;
 	*(unsigned int *)p_depth = htonl(1);
 
@@ -952,13 +994,28 @@ void Ilms::req_lookup(unsigned int ip_num)
 
 	if(count)
 	{
+		print_log(id, modes[(int)mode], "Forward", vlen, value);
 		insert(id,ID_SIZE+4, (char *)&count, sizeof(count));
 	}
 	else
 	{
 		*up_down = MARK_UP;
 		*(unsigned int *)p_depth = 0;
-		this->send_node(parent->get_ip_num(), sc.buf, sc.len);
+		if(parent->get_ip_num())
+		{
+			print_log(id, modes[(int)mode], "Forward", vlen, value);
+			this->send_node(parent->get_ip_num(), sc.buf, sc.len);
+		}
+		else
+		{
+			print_log(id, modes[(int)mode], "Fail");
+			print_log(id, modes[(int)mode], "Response");
+			sc.buf[0] = REQ_FAIL;
+			for(size_t i=1+ID_SIZE+4+1+4; i < sc.len; i++)
+				sc.buf[i-9] = sc.buf[i];
+			sc.len -= 9;
+			this->send_node(ip_num, sc.buf, sc.len);
+		}
 	}
 }
 
