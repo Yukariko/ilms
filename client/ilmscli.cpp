@@ -82,7 +82,7 @@ int IlmsCli::print_response(char *buf, int len)
 bool IlmsCli::req_id_register(const string& id, const string& loc)
 {
 	char header[BUF_SIZE];
-	char response[BUF_SIZE];
+	char response[BUF_SIZE] = {};
 	int len=0;
 
 	header[len++] = REQ_ID_REGISTER;
@@ -145,7 +145,7 @@ bool IlmsCli::req_id_register(const string& id, const string& loc)
 int IlmsCli::req_loc_update(char mode, const string& id, const string& loc)
 {
 	char header[BUF_SIZE];
-	char response[BUF_SIZE];
+	char response[BUF_SIZE] = {};
 	int len=0;
 
 	header[len++] = REQ_LOOKUP;
@@ -217,7 +217,7 @@ int IlmsCli::req_loc_update(char mode, const string& id, const string& loc)
 int IlmsCli::req_lookup(const string& id)
 {
 	char header[BUF_SIZE];
-	char response[BUF_SIZE];
+	char response[BUF_SIZE] = {};
 	int len=0;
 
 	header[len++] = REQ_LOOKUP;
@@ -279,7 +279,7 @@ int IlmsCli::req_lookup(const string& id)
 bool IlmsCli::req_id_deregister(const string& id)
 {
 	char header[BUF_SIZE];
-	char response[BUF_SIZE];
+	char response[BUF_SIZE] = {};
 	int len=0;
 
 	header[len++] = REQ_ID_DEREGISTER;
