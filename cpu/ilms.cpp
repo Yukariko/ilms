@@ -212,7 +212,7 @@ void Ilms::start()
 			DEBUG("Protocol OK!");
 
 			if(cmd >= 0 && cmd < 100)
-				protocol[cmd]++;
+				protocol[(int)cmd]++;
 
 			unsigned int ip_num = clnt_adr.sin_addr.s_addr;
 
@@ -586,7 +586,6 @@ void Ilms::loc_process(unsigned int ip_num, char *id, char mode, unsigned char v
 	}
 	else if(mode == LOC_SUB)
 	{
-		int len = 0;
 		std::string res;
 		std::string loc;
 		std::string val;
@@ -779,7 +778,7 @@ void Ilms::proc_lookup(unsigned int ip_num)
 			print_log(id, modes[(int)mode], "Fail", vlen, value);
 			print_log(id, modes[(int)mode], "Response", vlen, value);
 			sc.buf[0] = REQ_FAIL;
-			for(size_t i=1+ID_SIZE+4+1+4; i < sc.len; i++)
+			for(int i=1+ID_SIZE+4+1+4; i < sc.len; i++)
 				sc.buf[i-9] = sc.buf[i];
 			sc.len -= 9;
 			this->send_node(ip_org_num, sc.buf, sc.len);
@@ -833,7 +832,7 @@ void Ilms::proc_lookup_nack()
 			print_log(id, modes[(int)*mode], "Response");
 			sc.buf[0] = REQ_FAIL;
 			unsigned int ip_org_num = *(unsigned int *)&sc.buf[1+ID_SIZE];
-			for(size_t i=1+ID_SIZE+4+1+4; i < sc.len; i++)
+			for(int i=1+ID_SIZE+4+1+4; i < sc.len; i++)
 				sc.buf[i-9] = sc.buf[i];
 			sc.len -= 9;
 			this->send_node(ip_org_num, sc.buf, sc.len);
@@ -1011,7 +1010,7 @@ void Ilms::req_lookup(unsigned int ip_num)
 			print_log(id, modes[(int)mode], "Fail");
 			print_log(id, modes[(int)mode], "Response");
 			sc.buf[0] = REQ_FAIL;
-			for(size_t i=1+ID_SIZE+4+1+4; i < sc.len; i++)
+			for(int i=1+ID_SIZE+4+1+4; i < sc.len; i++)
 				sc.buf[i-9] = sc.buf[i];
 			sc.len -= 9;
 			this->send_node(ip_num, sc.buf, sc.len);
