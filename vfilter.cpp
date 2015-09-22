@@ -29,7 +29,7 @@ int main(int argc, char *argv[])
 		char buf[256];
 		printf("Input child %d's IP : ", i+1);
 		scanf("%s",buf);
-		fprintf("%s\n", buf);
+		fprintf(fp, "%s\n", buf);
 	}
 
 	fprintf(fp, "0\n0\n");
