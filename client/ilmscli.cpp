@@ -201,11 +201,11 @@ int IlmsCli::req_loc_update(char mode, const string& id, const string& loc)
 		}
 		else if(i != RETRANSMISSION_FREQUENCY - 1)
 		{
-			std::cout << "ID : " << id << ", LOC : " << loc << ", " << modes[mode] << " Retransmission..." << std::endl;
+			std::cout << "ID : " << id << ", LOC : " << loc << ", " << modes[(int)mode] << " Retransmission..." << std::endl;
 			this->send(header,len);
 		}
 	}
-	std::cout << "ID : " << id << ", LOC : " << loc << ", " << modes[mode] << " Fail" << std::endl;
+	std::cout << "ID : " << id << ", LOC : " << loc << ", " << modes[(int)mode] << " Fail" << std::endl;
 	return false;
 }
 

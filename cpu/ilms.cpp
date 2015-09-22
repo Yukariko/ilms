@@ -427,7 +427,7 @@ void Ilms::cmd_run()
 void Ilms::print_log(const char *id, const char *mode, const char *state, unsigned char vlen, const char *value)
 {
 	std::cout << "ID : " << id << ", ";
-	if(vlen)
+	if(vlen && *value != NULL)
 		std::cout << "LOC : " << value << ", ";
 	std::cout << mode << " " << state;
 	std::cout << std::endl;
