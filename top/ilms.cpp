@@ -837,10 +837,12 @@ void Ilms::req_id_register(unsigned int ip_num)
 		std::string ret;
 		if(search(id,ID_SIZE,ret))
 		{
-			sc.buf[0] = REQ_FAIL;
-			this->send_node(ip_num, sc.buf, sc.len);
 			print_log(id, "REG", "Fail", *(unsigned char*)(value-1), value);
 			print_log(id, "REG", "Response", *(unsigned char*)(value-1), value);
+			sc.buf[0] = REQ_FAIL;
+			sc.buf[1+ID_SIZE] = 0;
+			sc.len = 1 + ID_SIZE + 1;
+			this->send_node(ip_num, sc.buf, sc.len);
 			return;
 		}
 	}
