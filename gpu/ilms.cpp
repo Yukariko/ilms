@@ -220,7 +220,7 @@ void Ilms::start()
 			DEBUG("Protocol OK!");
 
 			if(cmd >= 0 && cmd < 100)
-				protocol[cmd]++;
+				protocol[(int)cmd]++;
 
 			unsigned int ip_num = clnt_adr.sin_addr.s_addr;
 
@@ -442,7 +442,7 @@ void Ilms::cmd_run()
 void Ilms::print_log(const char *id, const char *mode, const char *state, unsigned char vlen, const char *value)
 {
 	std::cout << "ID : " << id << ", ";
-	if(vlen && *value != NULL)
+	if(vlen && *value)
 		std::cout << "LOC : " << value << ", ";
 	std::cout << mode << " " << state;
 	std::cout << std::endl;
