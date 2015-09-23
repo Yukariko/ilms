@@ -574,6 +574,7 @@ void Ilms::loc_process(unsigned int ip_num, char *id, char mode, unsigned char v
 	{
 		send_id(ip_num,id,ret.c_str(),ret.length());
 		print_log(id, modes[(int)mode], "Success", vlen, value);
+		print_log(id, modes[(int)mode], "Response", vlen, value);
 		return;
 	}
 	else if(mode == LOC_SET)
@@ -641,6 +642,7 @@ void Ilms::loc_process(unsigned int ip_num, char *id, char mode, unsigned char v
 		sc.buf[0] = REQ_SUCCESS;
 		print_log(id, modes[(int)mode], "Success", vlen, value);
 	}
+	print_log(id, modes[(int)mode], "Response", vlen, value);
 	sc.buf[ID_SIZE+1] = mode;
 	sc.buf[ID_SIZE+2] = vlen;
 	for(size_t i=0; i < vlen; i++)
@@ -724,7 +726,6 @@ void Ilms::proc_lookup(unsigned int ip_num)
 		if(search(id,ID_SIZE,ret))
 		{
 			loc_process(ip_org_num, id, mode, vlen, value, ret);
-			print_log(id, modes[(int)mode], "Response", vlen, value);
 			return;
 		}
 	}
@@ -977,7 +978,6 @@ void Ilms::req_lookup(unsigned int ip_num)
 		if(search(id,ID_SIZE,ret))
 		{
 			loc_process(ip_num, id, mode, vlen, value, ret);
-			print_log(id, modes[(int)mode], "Response", vlen, value);
 			return;
 		}
 	}
