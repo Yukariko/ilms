@@ -642,10 +642,7 @@ void Ilms::loc_process(unsigned int ip_num, char *id, char mode, unsigned char v
 			if(ret[i] == ':')
 			{
 				if(loc == val)
-				{
 					find = true;
-					i += loc.size();
-				}
 				else if(loc.size())
 				{
 					res += ":";
