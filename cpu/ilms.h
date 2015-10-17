@@ -44,6 +44,7 @@ public:
 	void loc_process(unsigned int ip_num, char *id, char mode, unsigned char vlen, char *value, std::string& ret);
 
 	//id
+	void reset(Bloomfilter *filter);
 	void insert(char *key,int klen,const char *val,int vlen);
 	bool search(const char *key,int klen,std::string &val);
 	bool remove(char *key,int klen);
