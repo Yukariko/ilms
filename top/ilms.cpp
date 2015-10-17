@@ -263,9 +263,26 @@ void Ilms::stat_run()
 	}
 }
 
+void Ilms::reset(Bloomfilter *filter)
+{
+	leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
+	for(it->SeekToFirst(); it->Valid(); it->Next())
+	{
+		std::string key = it->key().ToString();
+		if(key.length() != ID_SIZE)
+			continue;
+		filter->insert(key.c_str());
+	}
+	assert(it->status().ok());	// Check for any errors found during the scan
+	delete it;
+}
+
 void Ilms::refresh_run()
 {
 	global_switch = NOREFRESH;
+
+	reset(my_filter);
+
 	if(child.size() > 0)
 	{
 		int sd = socket(PF_INET, SOCK_STREAM, 0);
@@ -323,16 +340,9 @@ void Ilms::refresh_run()
 			shadow_filter->zeroFilter();
 
 			global_switch = MYREFRESH;
-			leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
-			for(it->SeekToFirst(); it->Valid(); it->Next())
-			{
-				std::string key = it->key().ToString();
-				if(key.length() != ID_SIZE)
-					continue;
-				shadow_filter->insert(key.c_str());
-			}
-			assert(it->status().ok());	// Check for any errors found during the scan
-			delete it;
+
+			reset(shadow_filter);
+
 			global_switch = NOREFRESH;
 
 			my_filter->setFilter(shadow_filter->filter);
@@ -342,38 +352,29 @@ void Ilms::refresh_run()
 				shadow_filter->mergeFilter(child_filter[i]->filter);
 
 			global_switch = NOREFRESH;
-
-			for(size_t i=0; i < top.size(); i++)
-				send_refresh(top[i].get_ip_num(), shadow_filter->filter);
+			send_refresh(parent->get_ip_num(), shadow_filter->filter);
 		}
 	}
 	else
 	{
 		while(1)
 		{
+			sleep(REFRESH_FREQUENCY);
 			global_switch = MYREFRESH;
 			shadow_filter->zeroFilter();
 
-			leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
-			for(it->SeekToFirst(); it->Valid(); it->Next())
-			{
-				std::string key = it->key().ToString();
-				if(key.length() != ID_SIZE)
-					continue;
-				shadow_filter->insert(key.c_str());
-			}
-			assert(it->status().ok());	// Check for any errors found during the scan
-			delete it;
+			reset(shadow_filter);
 
 			global_switch = NOREFRESH;
 			//test_filter();
 
-			for(size_t i=0; i < top.size(); i++)
-				send_refresh(top[i].get_ip_num(), shadow_filter->filter);
-			sleep(REFRESH_FREQUENCY);
+			my_filter->setFilter(shadow_filter->filter);
+			send_refresh(parent->get_ip_num(), shadow_filter->filter);
+			
 		}
 	}
 }
+
 
 void Ilms::cmd_run()
 {
@@ -581,7 +582,9 @@ void Ilms::loc_process(unsigned int ip_num, char *id, char mode, unsigned char v
 	}
 	else if(mode == LOC_SET)
 	{
-		if(ret.back() != ':')
+		if(ret.back() == '\0')
+			ret.back() = ':';
+		else if(ret.back() != ':')
 			ret += ":";
 		ret += value;
 		insert(id,ID_SIZE,ret.c_str(),ret.size());
