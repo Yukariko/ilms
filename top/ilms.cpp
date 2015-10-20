@@ -592,7 +592,6 @@ void Ilms::loc_process(unsigned int ip_num, char *id, char mode, unsigned char v
 	}
 	else if(mode == LOC_SUB)
 	{
-		int len = 0;
 		std::string res;
 		std::string loc;
 		std::string val;
@@ -606,7 +605,7 @@ void Ilms::loc_process(unsigned int ip_num, char *id, char mode, unsigned char v
 				if(loc == val)
 				{
 					find = true;
-					i += loc.size();
+					loc = "";
 				}
 				else if(loc.size())
 				{
