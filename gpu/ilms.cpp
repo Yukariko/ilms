@@ -370,7 +370,7 @@ void Ilms::refresh_run()
 		unsigned char *filter = new unsigned char[defaultSize / 8 + 1];
 		while(1)
 		{
-			sleep(REFRESH_FREQUENCY);
+			
 			global_switch = MYREFRESH;
 			shadow_filter->zeroFilter();
 
@@ -382,7 +382,7 @@ void Ilms::refresh_run()
 			my_filter->setFilter(filter);
 
 			send_refresh(parent->get_ip_num(), filter);
-			
+			sleep(REFRESH_FREQUENCY);
 		}
 	}
 }

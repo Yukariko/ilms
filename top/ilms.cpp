@@ -359,7 +359,7 @@ void Ilms::refresh_run()
 	{
 		while(1)
 		{
-			sleep(REFRESH_FREQUENCY);
+			
 			global_switch = MYREFRESH;
 			shadow_filter->zeroFilter();
 
@@ -370,7 +370,7 @@ void Ilms::refresh_run()
 
 			my_filter->setFilter(shadow_filter->filter);
 			send_refresh(parent->get_ip_num(), shadow_filter->filter);
-			
+			sleep(REFRESH_FREQUENCY);
 		}
 	}
 }
