@@ -1,5 +1,4 @@
 #include <cstring>
-
 #include "ilmscli.h"
 
 #define REQ_ID_REGISTER				0x20
@@ -51,16 +50,17 @@ void IlmsCli::set_ip(const string& ip)
 
 int IlmsCli::print_response(char *buf, int len)
 {
+	eid.setBinary(buf+1);
 	if(len == 1 + ID_SIZE + 1)
 	{
-		std::cout << "ID : " << buf+1 << ", ";
+		std::cout << "ID : " << eid.toString().toUtf8().constData() << ", ";
 		std::cout << (buf[1+ID_SIZE] == 0? "REG " : "DEL ");
 		std::cout << (buf[0] == REQ_SUCCESS? "Success" : "Fail") << std::endl;
 		return buf[1+ID_SIZE] == 0? REQ_ID_REGISTER: REQ_ID_DEREGISTER;
 	}
 	else
 	{
-		std::cout << "ID : " << buf+1 << ", ";
+		std::cout << "ID : " << eid.toString().toUtf8().constData() << ", ";
 		int mode = buf[1+ID_SIZE];
 		if(mode)
 		{
@@ -85,14 +85,14 @@ bool IlmsCli::req_id_register(const string& id, const string& loc)
 	char response[BUF_SIZE] = {};
 	int len=0;
 
+	eid = IDPAddress(QString(id));
+
+	char temp[BUF_SIZE];
+	eid.toBinary(temp);
+
 	header[len++] = REQ_ID_REGISTER;
 	for(size_t i=0; i < ID_SIZE; i++)
-	{
-		if(i < id.size())
-			header[len++] = id[i];
-		else
-			header[len++] = 0;
-	}
+		header[len++] = temp[i];
 
 	header[len] = loc.length() + 1;
 	strcpy(header+len+1, loc.c_str());
@@ -111,12 +111,7 @@ bool IlmsCli::req_id_register(const string& id, const string& loc)
 				bool find = true;
 				for(size_t i=0; i < ID_SIZE; i++)
 				{
-					if(i < id.size() && id[i] != response[1+i])
-					{
-						find = false;
-						break;
-					}
-					else if(i >= id.size() && response[1+i])
+					if(temp[i] != response[1+i])
 					{
 						find = false;
 						break;
@@ -149,13 +144,16 @@ int IlmsCli::req_loc_update(char mode, const string& id, const string& loc)
 	int len=0;
 
 	header[len++] = REQ_LOOKUP;
+
+	eid = IDPAddress(QString(id));
+
+	char temp[BUF_SIZE];
+	eid.toBinary(temp);
+
+	header[len++] = REQ_ID_REGISTER;
 	for(size_t i=0; i < ID_SIZE; i++)
-	{
-		if(i < id.size())
-			header[len++] = id[i];
-		else
-			header[len++] = 0;
-	}
+		header[len++] = temp[i];
+
 	header[len++] = mode;
 	header[len] = loc.length() + 1;
 	strcpy(header+len+1, loc.c_str());
@@ -174,12 +172,7 @@ int IlmsCli::req_loc_update(char mode, const string& id, const string& loc)
 				bool find = true;
 				for(size_t i=0; i < ID_SIZE; i++)
 				{
-					if(i < id.size() && id[i] != response[1+i])
-					{
-						find = false;
-						break;
-					}
-					else if(i >= id.size() && response[1+i])
+					if(temp[i] != response[1+i])
 					{
 						find = false;
 						break;
@@ -221,13 +214,14 @@ int IlmsCli::req_lookup(const string& id)
 	int len=0;
 
 	header[len++] = REQ_LOOKUP;
+	eid = IDPAddress(QString(id));
+
+	char temp[BUF_SIZE];
+	eid.toBinary(temp);
+
+	header[len++] = REQ_ID_REGISTER;
 	for(size_t i=0; i < ID_SIZE; i++)
-	{
-		if(i < id.size())
-			header[len++] = id[i];
-		else
-			header[len++] = 0;
-	}
+		header[len++] = temp[i];
 
 	header[len++] = LOC_LOOKUP;
 	header[len++] = 0;
@@ -245,12 +239,7 @@ int IlmsCli::req_lookup(const string& id)
 				bool find = true;
 				for(size_t i=0; i < ID_SIZE; i++)
 				{
-					if(i < id.size() && id[i] != response[1+i])
-					{
-						find = false;
-						break;
-					}
-					else if(i >= id.size() && response[1+i])
+					if(temp[i] != response[1+i])
 					{
 						find = false;
 						break;
@@ -283,13 +272,14 @@ bool IlmsCli::req_id_deregister(const string& id)
 	int len=0;
 
 	header[len++] = REQ_ID_DEREGISTER;
+	eid = IDPAddress(QString(id));
+
+	char temp[BUF_SIZE];
+	eid.toBinary(temp);
+
+	header[len++] = REQ_ID_REGISTER;
 	for(size_t i=0; i < ID_SIZE; i++)
-	{
-		if(i < id.size())
-			header[len++] = id[i];
-		else
-			header[len++] = 0;
-	}
+		header[len++] = temp[i];
 
 	this->send(header,len);
 	for(int i=0; i < RETRANSMISSION_FREQUENCY; i++)
@@ -303,12 +293,7 @@ bool IlmsCli::req_id_deregister(const string& id)
 				bool find = true;
 				for(size_t i=0; i < ID_SIZE; i++)
 				{
-					if(i < id.size() && id[i] != response[1+i])
-					{
-						find = false;
-						break;
-					}
-					else if(i >= id.size() && response[1+i])
+					if(temp[i] != response[1+i])
 					{
 						find = false;
 						break;

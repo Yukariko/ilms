@@ -5,6 +5,7 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <iostream>
+#include "address.h"
 
 #define PORT 7979
 #define MYPORT 7979
@@ -41,6 +42,7 @@ private:
 	int sock;
 	struct sockaddr_in serv_adr;
 	string ip;
+	IDPAddress eid; 
 };
 
 
