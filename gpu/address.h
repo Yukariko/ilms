@@ -11,6 +11,7 @@ typedef struct IDP_id {
 	unsigned short scope;
 	unsigned int hash[5];
 } idpid_t;
+#pragma pack()
 
 class IDPAddress
 {
