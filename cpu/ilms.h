@@ -12,6 +12,7 @@
 #include <leveldb/db.h>
 #include <leveldb/write_batch.h>
 
+#include "address.h"
 #include "bloomfilter.h"
 #include "topology.h"
 #include "scanner.h"
@@ -45,9 +46,9 @@ public:
 
 	//id
 	void reset(Bloomfilter *filter);
-	void insert(char *key,int klen,const char *val,int vlen);
+	void insert(const char *key,int klen,const char *val,int vlen);
 	bool search(const char *key,int klen,std::string &val);
-	bool remove(char *key,int klen);
+	bool remove(const char *key,int klen);
 
 
 	//process
@@ -101,6 +102,8 @@ private:
 	static long long bitArray[12];
 	static int sock;
 	static struct sockaddr_in serv_adr, ref_adr;
+
+	static IDPAddress eid;
 };
 
 #endif
