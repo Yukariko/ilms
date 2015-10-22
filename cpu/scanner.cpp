@@ -32,6 +32,7 @@ Scanner& Scanner::operator=(const Scanner& there)
 	end = there.end;
 	len = there.len;
 	cur = there.cur;
+	return *this;
 }
 
 /*
