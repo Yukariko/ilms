@@ -1,15 +1,30 @@
-CPPFLAGS = -Wall -O -std=c++0x -g
+INCLUDEDIRS = \
+		-I$(ARCENGINEHOME)/include \
+		-I/usr/X11R6/include \
+		-I/usr/include/qt5 \
+		-I/usr/include/qt5/QtCore
 
-bin = ilmscli
 
-t1 = ilmscli
-t2 = main
+LIBDIRS = \
+		-L$(ARCENGINEHOME)/bin \
+		-L/usr/X11R6/lib
+
+LIBS = \
+		-lQt5Core
+
+CPPFLAGS = -Wall -O -std=c++0x -g -DESRI_UNIX $(INCLUDEDIRS) -fPIE
+LDFLAGS =  $(LIBDIRS) $(LIBS)
+
+bin = ilms
+
+t1 = ilms
+t2 = address
 
 obj = $(t1).o $(t2).o
 
 all: $(bin)
 $(bin): $(obj)
-	$(CXX) $(CPPFLAGS) $(obj) -o $@
+		$(CXX) $(CPPFLAGS) $(obj) $(LDFLAGS) -o $@
 
 clean:
-	rm -f $(bin) *.o
+		rm -f $(bin) *.o
