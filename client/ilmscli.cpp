@@ -143,14 +143,12 @@ int IlmsCli::req_loc_update(char mode, const string& id, const string& loc)
 	char response[BUF_SIZE] = {};
 	int len=0;
 
-	header[len++] = REQ_LOOKUP;
-
 	eid = IDPAddress(QString(id.c_str()));
 
 	char temp[BUF_SIZE];
 	eid.toBinary(temp);
 
-	header[len++] = REQ_ID_REGISTER;
+	header[len++] = REQ_LOOKUP;
 	for(size_t i=0; i < ID_SIZE; i++)
 		header[len++] = temp[i];
 
@@ -213,13 +211,12 @@ int IlmsCli::req_lookup(const string& id)
 	char response[BUF_SIZE] = {};
 	int len=0;
 
-	header[len++] = REQ_LOOKUP;
 	eid = IDPAddress(QString(id.c_str()));
 
 	char temp[BUF_SIZE];
 	eid.toBinary(temp);
 
-	header[len++] = REQ_ID_REGISTER;
+	header[len++] = REQ_LOOKUP;
 	for(size_t i=0; i < ID_SIZE; i++)
 		header[len++] = temp[i];
 
@@ -271,13 +268,12 @@ bool IlmsCli::req_id_deregister(const string& id)
 	char response[BUF_SIZE] = {};
 	int len=0;
 
-	header[len++] = REQ_ID_DEREGISTER;
 	eid = IDPAddress(QString(id.c_str()));
 
 	char temp[BUF_SIZE];
 	eid.toBinary(temp);
 
-	header[len++] = REQ_ID_REGISTER;
+	header[len++] = REQ_ID_DEREGISTER;
 	for(size_t i=0; i < ID_SIZE; i++)
 		header[len++] = temp[i];
 
