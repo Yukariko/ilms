@@ -53,14 +53,14 @@ int IlmsCli::print_response(char *buf, int len)
 	eid.setBinary(buf+1);
 	if(len == 1 + ID_SIZE + 1)
 	{
-		std::cout << "ID : " << eid.toString().toUtf8().constData() << ", ";
+		std::cout << "ID : " << eid.toString() << ", ";
 		std::cout << (buf[1+ID_SIZE] == 0? "REG " : "DEL ");
 		std::cout << (buf[0] == REQ_SUCCESS? "Success" : "Fail") << std::endl;
 		return buf[1+ID_SIZE] == 0? REQ_ID_REGISTER: REQ_ID_DEREGISTER;
 	}
 	else
 	{
-		std::cout << "ID : " << eid.toString().toUtf8().constData() << ", ";
+		std::cout << "ID : " << eid.toString() << ", ";
 		int mode = buf[1+ID_SIZE];
 		if(mode)
 		{
