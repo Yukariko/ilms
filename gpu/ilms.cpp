@@ -80,7 +80,7 @@ long long *Ilms::bitArray;
 int Ilms::sock;
 struct sockaddr_in Ilms::serv_adr;
 
-
+IDPAddress Ilms::eid;
 
 /*
  * Ilms 생성자
@@ -390,6 +390,9 @@ void Ilms::refresh_run()
 void Ilms::cmd_run()
 {
 	std::string c;
+
+	IDPAddress eid_parser;
+
 	while(std::cin >> c)
 	{
 		if(c == "show")
@@ -401,7 +404,8 @@ void Ilms::cmd_run()
 				std::string key = it->key().ToString();
 				if(key.length() != ID_SIZE)
 					continue;
-				std::cout << "[" << key.c_str() << "] " << it->value().ToString() << std::endl;
+				eid_parser.setBinary(key.c_str());
+				std::cout << "[" << eid_parser.toString() << "] " << it->value().ToString() << std::endl;
 			}
 			assert(it->status().ok());	// Check for any errors found during the scan
 			delete it;
@@ -428,11 +432,13 @@ void Ilms::cmd_run()
 			std::string id;
 			std::cin >> id;
 
-			for(size_t i=id.length(); i < ID_SIZE; i++)
-				id += '\0';
+			eid_parser = IDPAddress(QString(id.c_str()));
+
+			char buf[BUF_SIZE];
+			eid_parser.toBinary(buf);
 
 			std::string ret;
-			if(search(id.c_str(),ID_SIZE,ret))
+			if(search(buf,ID_SIZE,ret))
 				std::cout << "[" << id.c_str() << "] " << ret << std::endl;
 			else
 				std::cout << "[" << id.c_str() << "] " << "Not Found" << std::endl;
@@ -442,7 +448,7 @@ void Ilms::cmd_run()
 
 void Ilms::print_log(const char *id, const char *mode, const char *state, unsigned char vlen, const char *value)
 {
-	std::cout << "ID : " << id << ", ";
+	std::cout << "ID : " << eid.toString() << ", ";
 	if(vlen && *value)
 		std::cout << "LOC : " << value << ", ";
 	std::cout << mode << " " << state;
@@ -740,6 +746,8 @@ void Ilms::proc_lookup(unsigned int ip_num)
 	if(!sc.next_value(id,ID_SIZE))
 		return;
 
+	eid.setBinary(id);
+
 	unsigned int ip_org_num;
 	if(!sc.next_value(ip_org_num))
 		return;
@@ -847,6 +855,8 @@ void Ilms::proc_lookup_nack()
 	char *p_depth = sc.get_cur() + ID_SIZE + 4 + 1;
 	unsigned int depth = ntohl(*(unsigned int *)p_depth);
 
+	eid.setBinary(id);
+
 	char *mode = sc.get_cur() + ID_SIZE + 4 + 1 + 4;
 	print_log(id, modes[(int)*mode], "Receive Nack");
 
@@ -899,6 +909,8 @@ void Ilms::req_id_register(unsigned int ip_num)
 
 	if(!sc.next_value(id,ID_SIZE))
 		return;
+
+	eid.setBinary(id);
 
 	if(!sc.next_value(value))
 		return;
@@ -962,6 +974,8 @@ void Ilms::req_lookup(unsigned int ip_num)
 	char *id;
 	if(!sc.next_value(id,ID_SIZE))
 		return;
+
+	eid.setBinary(id);
 
 	char mode;
 	if(!sc.next_value(mode))
@@ -1079,6 +1093,8 @@ void Ilms::req_id_deregister(unsigned int ip_num)
 	if(!sc.next_value(id,ID_SIZE))
 		return;
 
+	eid.setBinary(id);
+
 	print_log(id, "DEL", "Request");
 	bool find = false;
 	if(my_filter->lookup(id))
@@ -1121,6 +1137,8 @@ void Ilms::peer_lookup(unsigned int ip_num)
 	char *id;
 	if(!sc.next_value(id,ID_SIZE))
 		return;
+
+	eid.setBinary(id);
 
 	unsigned int ip_org_num;
 	if(!sc.next_value(ip_org_num))
@@ -1168,6 +1186,8 @@ void Ilms::proc_lookup_down()
 	if(!sc.next_value(id,ID_SIZE))
 		return;
 
+	eid.setBinary(id);
+
 	unsigned int ip_org_num;
 	if(!sc.next_value(ip_org_num))
 		return;
@@ -1206,6 +1226,8 @@ void Ilms::peer_lookup_down()
 	if(!sc.next_value(id,ID_SIZE))
 		return;
 
+	eid.setBinary(id);
+
 	unsigned int ip_org_num;
 	if(!sc.next_value(ip_org_num))
 		return;
@@ -1239,7 +1261,7 @@ void Ilms::peer_lookup_down()
  * key, value 쌍으로 입력
  */
 
-void Ilms::insert(char *key,int klen,const char *val,int vlen)
+void Ilms::insert(const char *key,int klen,const char *val,int vlen)
 {
 	leveldb::Status s = db->Put(leveldb::WriteOptions(),leveldb::Slice(key,klen),leveldb::Slice(val,vlen));
 	assert(s.ok());
@@ -1260,7 +1282,7 @@ bool Ilms::search(const char *key,int klen,std::string &val)
  * 존재여부 확인을 위해 한번 검색함(효율 문제)
  */
 
-bool Ilms::remove(char *key,int klen)
+bool Ilms::remove(const char *key,int klen)
 {
 	std::string ret;
 	if(!search(key,klen,ret))

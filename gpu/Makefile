@@ -1,9 +1,19 @@
-LIBPATH = /home/jo/leveldb-master
-CPPFLAGS = -Wall -O -std=c++0x -g -L$(LIBPATH) -I $(LIBPATH)/include -I/usr/local/cuda/include/
-LDFLAGS = -lleveldb  -L /usr/local/cuda/lib64 -lcudart -lrt
+INCLUDEDIRS = \
+		-I$(ARCENGINEHOME)/include \
+		-I/usr/X11R6/include \
+		-I/usr/include/qt5 \
+		-I/usr/include/qt5/QtCore
 
-NVCC = nvcc
 
+LIBDIRS = \
+		-L$(ARCENGINEHOME)/bin \
+		-L/usr/X11R6/lib
+
+LIBS = \
+		-lQt5Core -lleveldb
+
+CPPFLAGS = -Wall -O -std=c++0x -g -DESRI_UNIX $(INCLUDEDIRS) -fPIE
+LDFLAGS =  $(LIBDIRS) $(LIBS)
 
 bin = ilms
 
@@ -12,20 +22,17 @@ t2 = ilms
 t3 = bloomfilter
 t4 = main
 t5 = scanner
+t6 = address
 
-obj = $(t1).o $(t2).o $(t4).o $(t5).o
+obj = $(t1).o $(t2).o $(t4).o $(t5).o $(t6).o
 obj2 = $(t3).o
 
 all: $(bin)
-
 $(bin): $(obj) $(obj2)
-	$(CXX) $(CPPFLAGS) $(obj) $(obj2) $(LDFLAGS) -o $@
+		$(CXX) $(CPPFLAGS) $(obj) $(obj2) $(LDFLAGS) -o $@
 
 $(obj2): $(t3).cu
 	$(NVCC) -c $^ -o $@ -std=c++11
 
-#$(obj): $(t1).cpp $(t2).cpp $(t4).cpp $(t5).cpp $(obj2)
-#	$(CXX) $(CPPFLAGS) $^  $(LDFLAGS) -o $@
-
 clean:
-	rm -f $(bin) *.o
+		rm -f $(bin) *.o

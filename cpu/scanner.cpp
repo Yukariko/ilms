@@ -26,6 +26,14 @@ Scanner::Scanner(char *buf, int len)
 	cur = buf;
 }
 
+Scanner& Scanner::operator=(const Scanner& there)
+{
+	buf = there.buf;
+	end = there.end;
+	len = there.len;
+	cur = there.cur;
+}
+
 /*
  * 스캐너 변수 읽기
  * 1바이트를 읽어 char형 변수 반환

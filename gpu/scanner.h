@@ -6,6 +6,7 @@ class Scanner
 public:
 	Scanner();
 	Scanner(char *buf, int len);
+	Scanner& operator=(const Scanner& there);
 
 	bool next_value(char &val);
 	bool next_value(unsigned char &val);
