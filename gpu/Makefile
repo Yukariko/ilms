@@ -2,15 +2,17 @@ INCLUDEDIRS = \
 		-I$(ARCENGINEHOME)/include \
 		-I/usr/X11R6/include \
 		-I/usr/include/qt5 \
-		-I/usr/include/qt5/QtCore
+		-I/usr/include/qt5/QtCore \
+		-I/usr/local/cuda/include
 
 
 LIBDIRS = \
 		-L$(ARCENGINEHOME)/bin \
-		-L/usr/X11R6/lib
+		-L/usr/X11R6/lib \
+		-L/usr/local/cuda/lib64
 
 LIBS = \
-		-lQt5Core -lleveldb
+		-lQt5Core -lleveldb -lcudart -lrt
 
 CPPFLAGS = -Wall -O -std=c++0x -g -DESRI_UNIX $(INCLUDEDIRS) -fPIE
 LDFLAGS =  $(LIBDIRS) $(LIBS)
