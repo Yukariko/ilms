@@ -85,7 +85,7 @@ bool IlmsCli::req_id_register(const string& id, const string& loc)
 	char response[BUF_SIZE] = {};
 	int len=0;
 
-	eid = IDPAddress(QString(id));
+	eid = IDPAddress(QString(id.c_str()));
 
 	char temp[BUF_SIZE];
 	eid.toBinary(temp);
@@ -145,7 +145,7 @@ int IlmsCli::req_loc_update(char mode, const string& id, const string& loc)
 
 	header[len++] = REQ_LOOKUP;
 
-	eid = IDPAddress(QString(id));
+	eid = IDPAddress(QString(id.c_str()));
 
 	char temp[BUF_SIZE];
 	eid.toBinary(temp);
@@ -214,7 +214,7 @@ int IlmsCli::req_lookup(const string& id)
 	int len=0;
 
 	header[len++] = REQ_LOOKUP;
-	eid = IDPAddress(QString(id));
+	eid = IDPAddress(QString(id.c_str()));
 
 	char temp[BUF_SIZE];
 	eid.toBinary(temp);
@@ -272,7 +272,7 @@ bool IlmsCli::req_id_deregister(const string& id)
 	int len=0;
 
 	header[len++] = REQ_ID_DEREGISTER;
-	eid = IDPAddress(QString(id));
+	eid = IDPAddress(QString(id.c_str()));
 
 	char temp[BUF_SIZE];
 	eid.toBinary(temp);
