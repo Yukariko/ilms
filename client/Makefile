@@ -15,9 +15,9 @@ LIBS = \
 CPPFLAGS = -Wall -O -std=c++0x -g -DESRI_UNIX $(INCLUDEDIRS) -fPIE
 LDFLAGS =  $(LIBDIRS) $(LIBS)
 
-bin = ilms
+bin = ilmscli
 
-t1 = ilms
+t1 = ilmscli
 t2 = address
 
 obj = $(t1).o $(t2).o
