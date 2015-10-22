@@ -74,7 +74,7 @@ IDPAddress::IDPAddress()
 		_data.hash[i] = 0;
 }
 
-IDPAddress::IDPAddress(const string &str) {
+IDPAddress::IDPAddress(const QString &str) {
 	unsigned int val[4];
 	val[0] = 1; val[1] = 0; val[2] = 0; val[3] = 0;
 	bool ok;
