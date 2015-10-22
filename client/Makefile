@@ -19,8 +19,9 @@ bin = ilmscli
 
 t1 = ilmscli
 t2 = address
+t3 = main
 
-obj = $(t1).o $(t2).o
+obj = $(t1).o $(t2).o $(t3).o
 
 all: $(bin)
 $(bin): $(obj)
