@@ -16,6 +16,7 @@ LIBS = \
 
 CPPFLAGS = -Wall -O -std=c++0x -g -DESRI_UNIX $(INCLUDEDIRS) -fPIE
 LDFLAGS =  $(LIBDIRS) $(LIBS)
+NVCC = nvcc
 
 bin = ilms
 
