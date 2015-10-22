@@ -22,7 +22,7 @@ public:
 	int getSize();
 	QByteArray toByteArray();
 	void toBinary(char *buf);
-	void setBinary(char *buf);
+	void setBinary(const char *buf);
 	void setData(const QByteArray &data);
 	bool operator ==(const IDPAddress &id);
 

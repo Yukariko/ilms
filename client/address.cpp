@@ -116,7 +116,7 @@ void IDPAddress::toBinary(char *buf)
 {
 	memcpy(buf, &_data, sizeof(_data));
 }
-void IDPAddress::setBinary(char *buf)
+void IDPAddress::setBinary(const char *buf)
 {
 	memcpy(&_data, buf, sizeof(_data));
 	setString();
