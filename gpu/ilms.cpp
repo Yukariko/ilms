@@ -4,6 +4,8 @@
 #include <ctime>
 #include "ilms.h"
 
+// 프로토콜 식별 번호
+
 #define CMD_BF_UPDATE					0x00
 #define CMD_LOOKUP						0x10
 #define CMD_LOOKUP_NACK				0x11
@@ -19,6 +21,8 @@
 #define PEER_LOOKUP						0x31
 #define PEER_LOOKUP_DOWN			0x32
 
+// mode 식별 번호
+
 #define LOC_LOOKUP						0x00
 #define LOC_SET								0x01
 #define LOC_SUB								0x02
@@ -27,10 +31,13 @@
 #define MARK_UP										0x01
 #define MARK_DOWN									0x00
 
+// refresh 상태
 
 #define NOREFRESH							0x00
 #define MYREFRESH							0x01
 #define CHILDREFRESH					0x02
+
+// 디버깅 관련
 
 //#define MODE 1
 #ifdef MODE
@@ -41,12 +48,10 @@
 #define DEBUG(s) 0
 #endif
 
-/*
- * 테스트 해시 함수
- */
-
+// 블룸필터 기본 크기(2MB)
 const long long defaultSize = 8LL * 2 * 1024 * 1024;
 
+// 테스트 해시 함수
 long long test(const char *id){return (*(unsigned short *)(id + 0) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 0;}
 long long test2(const char *id){return (*(unsigned short *)(id + 2) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 1;}
 long long test3(const char *id){return (*(unsigned short *)(id + 4) * 1009LL ) % (defaultSize / 10) + (defaultSize / 10) * 2;}
@@ -153,6 +158,7 @@ Ilms::Ilms()
 
 void Ilms::test_process()
 {
+	// ip가 0인 노드는 가상필터로 간주하여, VIRTUAL_FILTER_ID_NUM개의 가상 ID데이터를 생성하여 등록
 	char id[BUF_SIZE];
 	for(unsigned int i=0;i<child.size();i++)
 	{
@@ -213,17 +219,20 @@ void Ilms::start()
 		{
 			sc = Scanner(buf, len);
 
+			// 프로토콜 판별
 			char cmd;
 			if(!sc.next_value(cmd))
 				continue;
 
 			DEBUG("Protocol OK!");
 
+			// 통계 갱신
 			if(cmd >= 0 && cmd < 100)
 				protocol[(int)cmd]++;
 
 			unsigned int ip_num = clnt_adr.sin_addr.s_addr;
 
+			//프로토콜 별 처리
 			switch(cmd)
 			{
 			case CMD_BF_UPDATE: proc_bf_update(ip_num); break;
@@ -289,6 +298,10 @@ void Ilms::refresh_run()
 
 	reset(my_filter);
 
+	// 자신이 leaf 노드라면 주기마다 refresh를 부모에 전송
+	// leaf 노드가 아니라면 refresh 요청을 기다림
+	// refresh 도중 update의 영향으로 문제가 발생하지 않도록 global_switch로 체크
+
 	if(child.size() > 0)
 	{
 		int sd = socket(PF_INET, SOCK_STREAM, 0);
@@ -323,6 +336,9 @@ void Ilms::refresh_run()
 		struct sockaddr_in cli;
 		int clientlen;
 
+		// refresh 요청을 기다림
+		// 요청온 child노드의 블룸필터를 갱신하고 각 필터를 merge시켜 parent노드로 전송
+
 		unsigned char *filter = new unsigned char[defaultSize / 8 + 1];
 		while((ns = accept(sd, (struct sockaddr *)&cli,  (socklen_t *)&clientlen)) != -1)
 		{
@@ -333,8 +349,10 @@ void Ilms::refresh_run()
 				fpt += len;
 
 			close(ns);
-			global_switch = CHILDREFRESH;
 
+			// 요청온 노드를 찾고 필터를 갱신
+
+			global_switch = CHILDREFRESH;
 			for(unsigned int i=0; i < child.size(); i++)
 			{
 				if(child[i].get_ip_num() == ip_num)
@@ -343,6 +361,8 @@ void Ilms::refresh_run()
 					break;
 				}
 			}
+
+			// 자신의 필터를 재구성
 
 			global_switch = NOREFRESH;
 			shadow_filter->zeroFilter();
@@ -356,6 +376,8 @@ void Ilms::refresh_run()
 			my_filter->zeroFilter();
 			my_filter->mergeFilter(shadow_filter->filter);
 
+			// 각 필터를 merge하여 parent 노드에 전송
+
 			global_switch = CHILDREFRESH;
 			for(unsigned int i=0; i < child.size(); i++)
 				shadow_filter->mergeFilter(child_filter[i]->filter);
@@ -367,6 +389,7 @@ void Ilms::refresh_run()
 	}
 	else
 	{
+		// leaf 노드의 경우 주기마다 자신의 필터를 재구성하고 parent노드에게 전송
 		unsigned char *filter = new unsigned char[defaultSize / 8 + 1];
 		while(1)
 		{
@@ -395,6 +418,7 @@ void Ilms::cmd_run()
 
 	while(std::cin >> c)
 	{
+		// mdb의 모든 id정보 출력
 		if(c == "show")
 		{
 			std::cout << "--------------------" << std::endl;
@@ -411,6 +435,8 @@ void Ilms::cmd_run()
 			delete it;
 			std::cout << "--------------------" << std::endl;
 		}
+
+		// mdb의 모든 id정보 제거
 		else if(c == "crash")
 		{
 			leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
@@ -427,6 +453,8 @@ void Ilms::cmd_run()
 
 			std::cout << "delete complete" << std::endl;
 		}
+
+		// 특정 id를 찾아 출력
 		else if(c == "pick")
 		{
 			std::string id;
@@ -462,6 +490,7 @@ void Ilms::print_log(const char *id, const char *mode, const char *state, unsign
 
 void Ilms::send_node(unsigned int ip_num,const char *buf,int len)
 {
+	// ip가 0인 경우(가상필터)는 버퍼를 전송하지 않음
 	if(ip_num==0)
 		return;
 
@@ -846,7 +875,9 @@ void Ilms::proc_lookup(unsigned int ip_num)
 
 /*
  * 데이터 검색 실패. 노드에 false positive가 존재하는 상황
- * 다른 노드들에 대해
+ * 검색 단계에서 갱신한 count값을 가지고 모든 노드에서 검색 실패했는지 여부를 판단함
+ * 모든 노드에서 실패했다면 parent노드로 그 사실을 알림
+ * 하나라도 성공했다면 데이터를 찾은것이므로 검색 종료
  */
 
 void Ilms::proc_lookup_nack()
@@ -958,11 +989,6 @@ void Ilms::req_id_register(unsigned int ip_num)
 	sc.len = 1 + ID_SIZE + 1;
 	this->send_node(ip_num, sc.buf, sc.len);
 }
-
-/*
- * 클라이언트로 부터의 데이터 추가 요청
- * 사실상 기존 프로토콜과 동일함
- */
 
 /*
  * 클라이언트로 부터의 데이터 검색 요청

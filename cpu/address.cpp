@@ -10,6 +10,7 @@
 #include <iostream>
 using namespace std;
 
+// EID를 utf8의 std string 형태로 반환하는 함수
 const char *IDPAddress::toString() {
 	return _data_str.constData();
 }
@@ -112,10 +113,13 @@ bool IDPAddress::operator ==(const IDPAddress &id)
 			 && _data.hash[4] == id._data.hash[4] );
 }
 
+// EID의 24바이트 바이너리 값을 buf에 복사하는 함수
 void IDPAddress::toBinary(char *buf)
 {
 	memcpy(buf, &_data, sizeof(_data));
 }
+
+// EID의 24바이트 바이너리 값을 buf로 교체하는 함수
 void IDPAddress::setBinary(const char *buf)
 {
 	memcpy(&_data, buf, sizeof(_data));

@@ -34,10 +34,6 @@ Bloomfilter::~Bloomfilter()
 	delete[] hash;
 }
 
-/*
- * 데이터 등록
- */
-
 void Bloomfilter::insert(const char *data)
 {
 	for(int i=0;i<numHash;i++)
@@ -46,10 +42,6 @@ void Bloomfilter::insert(const char *data)
 		filter[res>>3] |= (1 << (res&7));
 	}
 }
-
-/*
- * 데이터 검색
- */
 
 bool Bloomfilter::lookup(const char *data)
 {
@@ -62,6 +54,10 @@ bool Bloomfilter::lookup(const char *data)
 	return true;
 }
 
+/*
+ * bitArray : 비트번호들의 배열, numHash만큼 들어있어야 함
+ */
+
 bool Bloomfilter::lookBitArray(long long *bitArray)
 {
 	for(int i=0;i<numHash;i++)
@@ -72,6 +68,12 @@ bool Bloomfilter::lookBitArray(long long *bitArray)
 	}
 	return true;
 }
+
+/*
+ * bitArray : 구한 비트번호들을 저장할 변수
+ * data : 비트번호를 구할 데이터
+ */
+
 void Bloomfilter::getBitArray(long long *bitArray, const char *data)
 {
 	for(int i=0;i<numHash;i++)
@@ -84,6 +86,10 @@ void Bloomfilter::zeroFilter()
 {
 	memset((void *)filter, 0, size / 8 + 1);
 }
+
+/*
+ * hostFilter : 다른 블룸필터의 필터 배열, 사이즈가 같아야함
+ */
 
 void Bloomfilter::mergeFilter(unsigned char *hostFilter)
 {

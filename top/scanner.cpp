@@ -26,6 +26,15 @@ Scanner::Scanner(char *buf, int len)
 	cur = buf;
 }
 
+Scanner& Scanner::operator=(const Scanner& there)
+{
+	buf = there.buf;
+	end = there.end;
+	len = there.len;
+	cur = there.cur;
+	return *this;
+}
+
 /*
  * 스캐너 변수 읽기
  * 1바이트를 읽어 char형 변수 반환
@@ -67,7 +76,7 @@ bool Scanner::next_value(int &val)
 
 /*
  * 스캐너 변수 읽기
- * 4바이트를 읽어 unsigned int 형 변수 반환
+ * 4바이트를 읽어 unsigned long 형 변수 반환
  */
 
 bool Scanner::next_value(unsigned int &val)
