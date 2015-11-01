@@ -1,6 +1,8 @@
 #include <cstring>
 #include "ilmscli.h"
 
+// 프로토콜 번호
+
 #define REQ_ID_REGISTER				0x20
 #define REQ_LOOKUP						0x21
 #define REQ_ID_DEREGISTER			0x22
@@ -17,6 +19,7 @@ const char* modes[] = {
 
 IlmsCli::IlmsCli(string ip)
 {
+	// socket init
 	this->ip = ip;
 
 	sock = socket(PF_INET, SOCK_DGRAM, 0);
@@ -48,9 +51,12 @@ void IlmsCli::set_ip(const string& ip)
 	this->ip = ip;
 }
 
+// 전달받은 패킷의 종류에 따른 메세지 출력
+
 int IlmsCli::print_response(char *buf, int len)
 {
 	eid.setBinary(buf+1);
+	// REG 또는 DEL 패킷
 	if(len == 1 + ID_SIZE + 1)
 	{
 		std::cout << "ID : " << eid.toString() << ", ";
@@ -58,16 +64,21 @@ int IlmsCli::print_response(char *buf, int len)
 		std::cout << (buf[0] == REQ_SUCCESS? "Success" : "Fail") << std::endl;
 		return buf[1+ID_SIZE] == 0? REQ_ID_REGISTER: REQ_ID_DEREGISTER;
 	}
+	// LOC 관련 패킷
 	else
 	{
 		std::cout << "ID : " << eid.toString() << ", ";
 		int mode = buf[1+ID_SIZE];
+
+		// 검색 외의 LOC 패킷
 		if(mode)
 		{
 			if(buf[1+ID_SIZE+1])
 				std::cout << "LOC : " << buf+1+ID_SIZE+1+1 << ", ";
 			std::cout << modes[mode] << " " << (buf[0] == REQ_SUCCESS? "Success" : "Fail") << std::endl;
 		}
+
+		// 검색 패킷
 		else
 		{
 			if(buf[0] == REQ_FAIL)
@@ -85,6 +96,8 @@ bool IlmsCli::req_id_register(const string& id, const string& loc)
 	char response[BUF_SIZE] = {};
 	int len=0;
 
+	// id를 eid binary로 변환하고, 패킷을 생성하여 전달
+
 	eid = IDPAddress(QString(id.c_str()));
 
 	char temp[BUF_SIZE];
@@ -100,6 +113,10 @@ bool IlmsCli::req_id_register(const string& id, const string& loc)
 	len += header[len] + 1;
 
 	this->send(header,len);
+
+	// 응답 받은 패킷이 원하던 패킷인지를 검사하고, 원하지 않은 패킷이면 재전송
+	// 원하지 않은 패킷이더라도 이전 패킷에 대한 결과일 수 있으니 메세지 출력
+
 	for(int i=0; i < RETRANSMISSION_FREQUENCY; i++)
 	{
 		int rlen = this->recieve(response);

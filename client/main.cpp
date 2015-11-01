@@ -18,6 +18,8 @@ int main()
 		string value;
 		string data;
 
+		// 명령을 찾고 각 명령에 대해 처리
+
 		int op = 0;
 		while(oper[op] && cmd != oper[op])
 			op++;
